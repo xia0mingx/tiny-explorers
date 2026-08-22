@@ -3,7 +3,9 @@
 A tablet-first learning app for **2-5 year olds**: seven quiz-style games with
 a difficulty level for each age, plus a Free Play section of five open-ended
 toys with no score and no correct answer. Built to be played on an iPad, held
-sideways, by a child who cannot read yet.
+sideways, by a child who cannot read yet — but every screen also fits a phone,
+portrait or landscape, since a parent handing over their phone for five
+minutes is just as common as a dedicated iPad.
 
 Zero dependencies, zero build step, works offline. Open it in a browser and it
 runs — the whole app is HTML, CSS and ES modules, and every piece of artwork is
@@ -220,6 +222,13 @@ no Pillow). PNGs are needed because iPadOS's "Add to Home Screen" reads
   need to force a clean re-cache.
 - Speech voice quality varies a lot by platform — iPadOS is good, Windows
   Chrome is robotic. Judge the audio on the actual target device.
+- **`.overlay` (the celebration screen and the settings sheet) centers via
+  auto margins on its first/last child, not `justify-content: center`.**
+  Content taller than the viewport is common on a phone in landscape (confirmed
+  at 812×375, the settings sheet is ~578px tall) — `justify-content: center`
+  clips the overflow off the top with no way to scroll to it, while auto
+  margins collapse to 0 once content doesn't fit and fall back to normal
+  top-down scrolling. Don't "simplify" this back to `justify-content: center`.
 - No test suite. Verification so far has been done by driving the real app in a
   browser; if this grows, the pure logic worth testing first is maze generation,
   pattern sequencing, and the tracing waypoint advance.

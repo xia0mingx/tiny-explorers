@@ -324,6 +324,14 @@ svg { display: block; overflow: visible; }
 
 /* ── Celebration ───────────────────────────────────────────────────────── */
 
+/* Centered when it fits, scrollable when it doesn't — a phone in landscape
+   can be shorter than the settings sheet or the celebration screen are
+   tall. justify-content: center would just clip the overflow off the top
+   with no way to reach it (confirmed: at 812x375 the sheet is 578px tall
+   and its top sits 101px above the viewport). Centering via auto margins on
+   the first/last child instead degrades safely: the margins collapse to 0
+   once content is taller than the box, and normal top-down scrolling takes
+   over rather than clipping anything. */
 .overlay {
   position: fixed;
   inset: 0;
@@ -331,12 +339,15 @@ svg { display: block; overflow: visible; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: clamp(10px, 2vh, 26px);
   background: rgba(255, 247, 237, .96);
   padding: env(safe-area-inset-top) 24px env(safe-area-inset-bottom);
   animation: fade .3s ease;
+  overflow-y: auto;
+  touch-action: pan-y;
 }
+.overlay > *:first-child { margin-top: auto; }
+.overlay > *:last-child { margin-bottom: auto; }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 
 .overlay h2 {
