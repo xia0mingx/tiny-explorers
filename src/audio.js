@@ -124,18 +124,33 @@ export function playTone(freq, dur = 0.5) {
 /* ── speech ────────────────────────────────────────────────────────────── */
 
 /* Prefer a voice that sounds friendly rather than whichever the OS defaults to.
-   These are the common warm en-* voices across iPadOS/macOS/Windows/Android. */
+   These are the common warm en-* voices across iPadOS/macOS/Windows/Android —
+   kept as a fallback list for older platforms that don't ship anything better. */
 const PREFERRED = ['Samantha', 'Karen', 'Moira', 'Tessa', 'Google UK English Female',
-                   'Microsoft Zira', 'Microsoft Aria'];
+                   'Google US English', 'Microsoft Aria', 'Microsoft Zira'];
+
+/* Windows/Edge and Android/Chrome have both shipped noticeably less robotic
+   "Natural"/"Neural"/"Online" voice tiers in recent OS versions, alongside
+   the classic SAPI/eSpeak-era voices under the same browser. The label is a
+   far stronger natural-vs-robotic signal than any specific name we could
+   hardcode (new ones ship every OS update), so check for it before falling
+   back to the known-good PREFERRED list. */
+const QUALITY_HINT = /natural|neural|online/i;
 
 function chooseVoice() {
   const voices = speechSynthesis.getVoices?.() ?? [];
   if (!voices.length) return null;
+  const english = voices.filter((v) => v.lang?.startsWith('en'));
+  const pool = english.length ? english : voices;
+
+  const natural = pool.find((v) => QUALITY_HINT.test(v.name));
+  if (natural) return natural;
+
   for (const want of PREFERRED) {
-    const hit = voices.find((v) => v.name.includes(want));
+    const hit = pool.find((v) => v.name.includes(want));
     if (hit) return hit;
   }
-  return voices.find((v) => v.lang?.startsWith('en')) ?? voices[0];
+  return pool[0];
 }
 
 /** Speak text aloud. Always available — the caller (the speaker button) is the
@@ -150,8 +165,12 @@ export function say(text) {
     const v = chooseVoice();
     if (v) u.voice = v;
     u.lang = v?.lang || 'en-US';
-    u.rate = 0.85;   // toddlers need the gap between words
-    u.pitch = 1.25;  // reads as friendly rather than announcer-ish
+    u.rate = 0.88;   // toddlers need the gap between words
+    // Most engines pitch-shift by simple resampling rather than preserving
+    // formants, so the further this sits from 1.0 the more artificial —
+    // "chipmunk" — it sounds. 1.25 was pushing that; 1.08 still reads as
+    // warm rather than announcer-flat without the artifact.
+    u.pitch = 1.08;
     u.volume = 1;
     speechSynthesis.speak(u);
   } catch { /* speech is an enhancement; never let it break a round */ }

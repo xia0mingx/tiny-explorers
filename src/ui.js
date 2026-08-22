@@ -6,6 +6,7 @@ import { glyph, renderSprite, ANIMALS, PALETTE } from './art.js';
 import { sfx, stopSpeech } from './audio.js';
 import { getSettings, setSetting, resetProgress } from './state.js';
 import { offlineStatus } from './offline.js';
+import { APP_VERSION } from './cache-manifest.js';
 
 /** Round icon button. `label` is for screen readers only — nothing here shows text. */
 export function iconButton(svg, onClick, label) {
@@ -198,7 +199,8 @@ export function settingsSheet() {
     toggle('Sound effects', 'sound'),
     toggle('Read instructions aloud', 'autoSpeak'),
     resetBtn,
-    el('button', { class: 'big-btn', text: 'Done', onclick: () => { sfx('tap'); close(); } })));
+    el('button', { class: 'big-btn', text: 'Done', onclick: () => { sfx('tap'); close(); } }),
+    el('p', { class: 'hint', text: `Version ${APP_VERSION}` })));
 
   document.body.append(overlay);
   return overlay;

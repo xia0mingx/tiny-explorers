@@ -5,9 +5,14 @@
    src/offline.js (which uses it to report "N of N files saved" in the
    settings sheet), so the two can never silently drift out of sync — the
    whole point of the offline-ready indicator is that it tells the truth.
+
+   APP_VERSION lives here too rather than in a package.json (there isn't
+   one — no build step) so there's exactly one place to remember to touch on
+   a shipped change, not two that can drift apart. Bump both together.
 */
 
 export const CACHE_NAME = 'tiny-explorers-v5';
+export const APP_VERSION = '1.4.0';
 
 export const SHELL = [
   './',

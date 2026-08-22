@@ -181,6 +181,14 @@ unless a child specifically asks for it. A grown-up can flip "Read instructions
 aloud" on in settings to have every prompt spoken automatically instead, for a
 child too young to press the speaker on their own.
 
+`chooseVoice()` in `audio.js` prefers any installed voice labelled
+"Natural"/"Neural"/"Online" — the tier modern Windows/Edge and Android/Chrome
+ship alongside their older, more robotic SAPI/eSpeak-era voices — before
+falling back to a hardcoded list of known-good classic voices (Samantha,
+Google UK/US English, etc.). Pitch is tuned to 1.08 rather than pushed
+higher: most engines pitch-shift by simple resampling rather than preserving
+formants, so the further it sits from 1.0 the more "chipmunk" it sounds.
+
 ### Settings are behind a hold, not a tap
 
 The gear in the top-right needs a **1.2 second press**. That is the entire
