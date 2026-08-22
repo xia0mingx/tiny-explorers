@@ -116,7 +116,21 @@ svg { display: block; overflow: visible; }
   display: flex;
   flex-direction: column;
   padding: 0 clamp(14px, 2.4vw, 32px) clamp(14px, 2.4vw, 28px);
+  /* The home screen now stacks two sections (Games, Free Play) that won't
+     both fit unscrolled at every card size, so scrolling moved up to here
+     from .game-grid, which used to scroll internally on its own. */
+  overflow-y: auto;
+  touch-action: pan-y;
 }
+
+.section-heading {
+  flex: 0 0 auto;
+  font-size: clamp(16px, 2vw, 22px);
+  font-weight: 800;
+  color: var(--ink-soft);
+  padding: clamp(10px, 1.6vh, 18px) 4px clamp(6px, 1vh, 10px);
+}
+.section-heading:first-child { padding-top: 0; }
 
 .hero {
   text-align: center;
@@ -173,14 +187,11 @@ svg { display: block; overflow: visible; }
 /* ── Home: game grid ───────────────────────────────────────────────────── */
 
 .game-grid {
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 0 0 auto;                 /* sized to content; .screen owns scrolling now */
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: clamp(10px, 1.6vw, 22px);
   align-content: start;
-  overflow-y: auto;               /* only ever scrolls if a phone is very short */
-  touch-action: pan-y;
   padding-bottom: 8px;
 }
 @media (max-width: 900px) { .game-grid { grid-template-columns: repeat(3, 1fr); } }
@@ -642,3 +653,230 @@ svg { display: block; overflow: visible; }
   margin: 0 auto;
 }
 .maze-svg { width: 100%; height: 100%; touch-action: none; }
+
+/* ═══ Free Play toys ═══════════════════════════════════════════════════════
+   These have no rounds, no stars, no correct answer — see toyShell.js. Kept
+   together at the end alongside the quiz-game section above. */
+
+.toy-stage { padding: 0 clamp(14px, 2.4vw, 32px) clamp(10px, 1.6vh, 22px); }
+
+/* ── Drawing ───────────────────────────────────────────────────────────── */
+
+.draw-wrap {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(6px, 1.2vh, 14px);
+}
+
+.draw-toolbar {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.draw-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.draw-mode, .draw-clear {
+  min-height: 52px;
+  padding: 0 20px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 15px;
+  background: var(--card);
+  box-shadow: var(--lift);
+}
+.draw-mode.active { background: var(--pink); color: #fff; }
+.draw-clear { background: #fff2ea; color: #c65a2e; }
+
+.brush-size {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--card);
+  box-shadow: var(--lift);
+}
+.brush-size span { display: block; border-radius: 50%; background: var(--ink-soft); }
+.brush-size.active { background: var(--bg-2); box-shadow: inset 0 0 0 3px var(--pink); }
+
+.stamp-choice {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  padding: 6px;
+  background: var(--card);
+  box-shadow: var(--lift);
+}
+.stamp-choice.active { box-shadow: inset 0 0 0 3px var(--pink); }
+.stamp-choice svg { width: 100%; height: 100%; }
+
+.swatch {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  box-shadow: var(--lift);
+}
+.swatch.active { box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--ink), var(--lift); }
+
+.draw-canvas {
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+  border-radius: var(--radius);
+  background: #fffdf9;
+  box-shadow: var(--lift);
+  touch-action: none;
+}
+
+/* ── Dress-Up ──────────────────────────────────────────────────────────── */
+
+.dressup-wrap {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(6px, 1.4vh, 16px);
+}
+.dressup-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+}
+.dressup-figure { width: clamp(140px, 24vw, 260px); height: clamp(140px, 24vw, 260px); }
+
+.dressup-controls {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dressup-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.dressup-label {
+  flex: 0 0 auto;
+  width: 78px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+.dressup-strip {
+  flex: 1 1 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.dressup-swatch {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  padding: 5px;
+  background: var(--card);
+  box-shadow: var(--lift);
+}
+.dressup-swatch.active { box-shadow: inset 0 0 0 3px var(--purple); }
+.dressup-swatch svg { width: 100%; height: 100%; }
+.dressup-color { width: 100%; height: 100%; border-radius: 50%; }
+
+.dressup-shuffle {
+  align-self: center;
+  width: var(--tap);
+  height: var(--tap);
+  border-radius: 50%;
+  background: var(--card);
+  box-shadow: var(--lift);
+  margin-top: 4px;
+}
+.dressup-shuffle svg { width: 60%; height: 60%; margin: 0 auto; }
+
+/* ── Music Maker ───────────────────────────────────────────────────────── */
+
+.music-wrap {
+  width: min(100%, 620px);
+  height: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1.6vh, 16px);
+}
+.music-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(5px, 1vh, 10px);
+}
+.music-row {
+  flex: 1 1 0;
+  display: flex;
+  gap: clamp(5px, 1vw, 10px);
+}
+.music-cell {
+  flex: 1 1 0;
+  min-width: 0;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: inset 0 0 0 3px var(--cell-color, var(--pink));
+  transition: transform .1s ease;
+}
+.music-cell.on { background: var(--cell-color, var(--pink)); }
+.music-cell.playhead { transform: scale(1.08); }
+
+.music-transport {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+.music-play {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--card);
+  box-shadow: var(--lift);
+}
+.music-play svg { width: 55%; height: 55%; margin: 0 auto; }
+.music-clear {
+  min-height: 52px;
+  padding: 0 22px;
+  border-radius: 999px;
+  font-weight: 800;
+  background: var(--card);
+  box-shadow: var(--lift);
+  color: var(--ink-soft);
+}
+
+/* ── Dot to Dot ────────────────────────────────────────────────────────── */
+
+.dot-wrap {
+  height: 100%;
+  aspect-ratio: 1;
+  max-width: 100%;
+  max-height: 100%;
+  margin: 0 auto;
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--lift);
+  padding: clamp(10px, 1.6vw, 22px);
+}
+.dot-svg { width: 100%; height: 100%; touch-action: none; }
+.dot { cursor: pointer; }
+.dot.pulse { animation: pulse 1.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.dot.wrong { animation: wobble .45s ease; transform-box: fill-box; transform-origin: center; }
+.dot.done text { opacity: .45; }

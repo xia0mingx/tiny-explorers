@@ -413,6 +413,80 @@ const SHAPE_ART = {
 
 for (const [id, fn] of Object.entries(SHAPE_ART)) add(id, fn);
 
+/* ── dress-up bodies ───────────────────────────────────────────────────────
+   Deliberately new, simple silhouettes rather than reusing the animal
+   sprites: animals' ears/features sit at wildly different heights (bunny's
+   ears rise almost off-canvas, a fish has no head at all), which would need
+   per-animal anchor tuning for accessories to sit right. These three share
+   one consistent head-top so a bow/glasses/crown looks right on any of them. */
+
+add('blob', (c) => `
+  <circle cx="50" cy="58" r="38" fill="${c}"/>
+  ${eyes(50, 13)}
+  ${smile(64, 6)}
+  ${blush(60, 24)}`);
+
+add('egg', (c) => `
+  <ellipse cx="50" cy="55" rx="30" ry="42" fill="${c}"/>
+  ${eyes(46, 12)}
+  ${smile(58, 5.5)}
+  ${blush(54, 22)}`);
+
+add('boxy', (c) => `
+  <rect x="14" y="20" width="72" height="72" rx="22" fill="${c}"/>
+  ${eyes(48, 13)}
+  ${smile(62, 6)}
+  ${blush(58, 24)}`);
+
+export const BUDDIES = ['blob', 'egg', 'boxy'];
+
+/** Overlays composited on top of a buddy body by the Dress-Up toy. Each
+ *  carries its own default colours (ignoring any argument) so a picker
+ *  preview and the live figure always show the same result. */
+export const ACCESSORY = {
+  none: () => '',
+  bow: () => `
+    <path d="M50 16 L38 8 L38 22 Z" fill="#ff5d73"/>
+    <path d="M50 16 L62 8 L62 22 Z" fill="#ff5d73"/>
+    <circle cx="50" cy="16" r="5" fill="${shade('#ff5d73', -20)}"/>`,
+  glasses: () => `
+    <circle cx="38" cy="48" r="11" fill="none" stroke="#403d52" stroke-width="4"/>
+    <circle cx="62" cy="48" r="11" fill="none" stroke="#403d52" stroke-width="4"/>
+    <path d="M49 48 h2" stroke="#403d52" stroke-width="4"/>
+    <path d="M27 46 q-8 -4 -10 4" stroke="#403d52" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <path d="M73 46 q8 -4 10 4" stroke="#403d52" stroke-width="4" fill="none" stroke-linecap="round"/>`,
+  crown: () => `
+    <path d="M30 22 L36 6 L50 18 L64 6 L70 22 Z" fill="#ffc93c"
+          stroke="${shade('#ffc93c', -30)}" stroke-width="2" stroke-linejoin="round"/>
+    <circle cx="36" cy="6" r="3" fill="#ff6b8a"/>
+    <circle cx="50" cy="18" r="3" fill="#5fd6a4"/>
+    <circle cx="64" cy="6" r="3" fill="#6cc0ff"/>`,
+};
+export const ACCESSORY_IDS = ['none', 'bow', 'glasses', 'crown'];
+
+/* ── dot-to-dot outlines ───────────────────────────────────────────────────
+   Raw path `d` strings (not full renderSprite() output) so the Dot-to-Dot
+   toy can sample points along them with getPointAtLength() — the same
+   technique tracing.js uses to walk a guide path. Any SVG geometry element
+   supports this, but keeping these as plain `d` strings means one code path
+   regardless of whether the shape was originally a <path> or a <polygon>. */
+
+const pointsToPath = (points) => {
+  const pts = points.trim().split(/\s+/);
+  return `M${pts[0]} ${pts.slice(1).map((p) => `L${p}`).join(' ')} Z`;
+};
+
+export const SHAPE_OUTLINE = {
+  circle: 'M10 50 A40 40 0 1 1 90 50 A40 40 0 1 1 10 50 Z',
+  square: pointsToPath('11,11 89,11 89,89 11,89'),
+  triangle: pointsToPath('50,8 93,88 7,88'),
+  diamond: pointsToPath('50,6 92,50 50,94 8,50'),
+  star: pointsToPath(starPoly(5, 50, 52, 45, 19)),
+  heart: 'M50 90 C10 62 10 26 32 20 C42 17 50 26 50 33 '
+       + 'C50 26 58 17 68 20 C90 26 90 62 50 90 Z',
+};
+export const OUTLINE_SHAPE_IDS = Object.keys(SHAPE_OUTLINE);
+
 /* ── public API ────────────────────────────────────────────────────────── */
 
 export const ANIMALS = ['cat', 'bunny', 'bear', 'dog', 'mouse', 'fox', 'frog', 'duck',
@@ -508,4 +582,14 @@ export const glyph = {
     `<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M22 52 L42 72 L78 30"
        stroke="#3fbf7f" stroke-width="14" fill="none"
        stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+
+  dice: () =>
+    `<svg viewBox="0 0 100 100" aria-hidden="true">
+       <rect x="14" y="14" width="72" height="72" rx="18" fill="#ffffff"
+             stroke="#403d52" stroke-width="6"/>
+       <circle cx="34" cy="34" r="7" fill="#403d52"/>
+       <circle cx="66" cy="34" r="7" fill="#403d52"/>
+       <circle cx="50" cy="50" r="7" fill="#403d52"/>
+       <circle cx="34" cy="66" r="7" fill="#403d52"/>
+       <circle cx="66" cy="66" r="7" fill="#403d52"/></svg>`,
 };

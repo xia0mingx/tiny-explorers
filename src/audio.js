@@ -102,6 +102,19 @@ export function sfx(name) {
   EFFECTS[name]?.();
 }
 
+/** A five-note major pentatonic (C D E G A) — the standard trick behind
+ *  every "kids can't make it sound bad" music toy, since no combination of
+ *  these notes is dissonant. Used by the Music Maker free-play toy. */
+export const PENTATONIC = [261.63, 293.66, 329.63, 392.0, 440.0];
+
+/** Public one-shot note player. Unlike sfx(), this is NOT gated on the
+ *  `sound` setting: it's for toys whose entire point IS making a sound (the
+ *  music maker), so muting incidental sound effects elsewhere shouldn't also
+ *  silence the one toy where sound is the whole interaction. */
+export function playTone(freq, dur = 0.5) {
+  tone(freq, 0, dur);
+}
+
 /* ── speech ────────────────────────────────────────────────────────────── */
 
 /* Prefer a voice that sounds friendly rather than whichever the OS defaults to.

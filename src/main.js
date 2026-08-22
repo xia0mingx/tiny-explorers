@@ -13,7 +13,9 @@ import { unlock, sfx, stopSpeech } from './audio.js';
 import { registerServiceWorker } from './offline.js';
 import { getAge, setAge, getStars, totalStars } from './state.js';
 import { startGame } from './engine.js';
+import { startToy } from './toyShell.js';
 import { GAMES } from './games/index.js';
+import { TOYS } from './toys/index.js';
 
 const app = document.getElementById('app');
 let active = null;   // the running game, so navigating away can tear it down
@@ -98,7 +100,22 @@ function renderHome() {
     el('div', { class: 'earned', html: earned ? `${glyph.star()}<span>${earned}</span>` : '&nbsp;' })));
   });
 
-  app.replaceChildren(header, el('div', { class: 'screen' }, grid));
+  const toyGrid = el('div', { class: 'game-grid toy-grid' });
+  TOYS.forEach((toy) => {
+    toyGrid.append(el('button', {
+      class: 'game-card toy-card',
+      'aria-label': toy.title,
+      onclick: () => { sfx('tap'); playToy(toy); },
+    },
+    el('div', { class: 'thumb', style: { background: `${toy.color}2e` }, html: toy.icon() }),
+    el('h3', { text: toy.title })));
+  });
+
+  app.replaceChildren(header, el('div', { class: 'screen' },
+    el('div', { class: 'section-heading', text: 'Games' }),
+    grid,
+    el('div', { class: 'section-heading', text: 'Free Play' }),
+    toyGrid));
 }
 
 /* ── screen: a game ────────────────────────────────────────────────────── */
@@ -107,6 +124,16 @@ function play(game) {
   leaveGame();
   active = startGame({
     game,
+    age: getAge(),
+    mount: app,
+    onExit: renderHome,
+  });
+}
+
+function playToy(toy) {
+  leaveGame();
+  active = startToy({
+    toy,
     age: getAge(),
     mount: app,
     onExit: renderHome,

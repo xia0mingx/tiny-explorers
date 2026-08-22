@@ -1,8 +1,9 @@
 # Tiny Explorers
 
-A tablet-first learning app for **2-5 year olds**, with seven games and a
-difficulty level for each age. Built to be played on an iPad, held sideways, by
-a child who cannot read yet.
+A tablet-first learning app for **2-5 year olds**: seven quiz-style games with
+a difficulty level for each age, plus a Free Play section of four open-ended
+toys with no score and no correct answer. Built to be played on an iPad, held
+sideways, by a child who cannot read yet.
 
 Zero dependencies, zero build step, works offline. Open it in a browser and it
 runs — the whole app is HTML, CSS and ES modules, and every piece of artwork is
@@ -72,6 +73,20 @@ Each session is a handful of rounds (3-6 depending on the game) and ends in a
 celebration, which keeps a sitting to roughly two to four minutes — about the
 attention span being designed for.
 
+## Free Play
+
+Four open-ended toys, modelled on the Montessori-style "no objective, just
+tinker" toys in apps like Pok Pok, rather than the quiz format above. Opening
+one never shows a prompt or a star track — there's nothing to get right or
+wrong, so a session ends whenever the child taps back, not when a round is won.
+
+| Toy | What it is |
+|---|---|
+| **Drawing** | Finger-paint (Brush mode) or tap to place a coloured sprite (Stamp mode), on a blank canvas. Clear is instant — nothing here is precious. |
+| **Dress-Up** | Pick a friend, a colour, and an accessory for a simple character; a shuffle button randomises all three at once. |
+| **Music Maker** | An 8-step, 5-row sequencer tuned to a pentatonic scale, so every combination a child taps sounds pleasant — there's no wrong note. |
+| **Dot to Dot** | Numbered dots trace out a shape; connecting them in order fills it in with colour, then a new shape starts automatically. |
+
 ## Design rules
 
 These are the constraints the whole app is built around. They're worth knowing
@@ -107,9 +122,11 @@ the outside world.
 
 ```
 index.html
-  src/main.js             three screens: age picker -> home -> game
-  src/engine.js           round loop, star track, celebration; owns "no fail state"
-  src/games/*.js          one module per game — renders a round, calls ctx.win()
+  src/main.js             four screens: age picker -> home -> game/toy
+  src/engine.js           quiz shell: round loop, star track, celebration
+  src/toyShell.js         free-play shell: just chrome + teardown, no rounds
+  src/games/*.js          one module per quiz game — renders a round, calls ctx.win()
+  src/toys/*.js           one module per free-play toy — no win state at all
   src/art.js              every sprite, drawn in code
   src/audio.js            WebAudio effects + on-demand speech synthesis
   src/state.js            localStorage (age, stars, sound/speech settings)
@@ -119,10 +136,16 @@ index.html
 sw.js                     the service worker (stale-while-revalidate)
 ```
 
-A game module is small and only does one thing: render a round into `ctx.stage`
-and call `ctx.win()` when it's solved. It never touches the star track, round
-counting or the reward animation — the engine owns all of that, so the feedback
-loop is identical in all seven games.
+A quiz game module is small and only does one thing: render a round into
+`ctx.stage` and call `ctx.win()` when it's solved. It never touches the star
+track, round counting or the reward animation — `engine.js` owns all of that,
+so the feedback loop is identical across all seven games.
+
+A free-play toy is even smaller: it gets a `stage` and `onCleanup()` from
+`toyShell.js` and nothing else — no prompt, no star track, no win/nudge, since
+there's no objective to signal. See `src/toyShell.js`'s own comment for why it
+mirrors `engine.js`'s teardown()/exit() split from the start rather than
+re-discovering that bug.
 
 ### Artwork is code, and silhouettes are derived
 
@@ -173,12 +196,17 @@ no Pillow). PNGs are needed because iPadOS's "Add to Home Screen" reads
 
 ## Notes for later
 
-- **Adding a game**: drop a module in `src/games/`, export the same shape as the
-  others (`id`, `title`, `color`, `rounds(age)`, `icon()`, `round(ctx)`), and add
-  it to `src/games/index.js` and the `SHELL` list in `src/cache-manifest.js`
-  (shared by `sw.js` and the offline-ready indicator — missing it there means
-  the game silently isn't available offline, and the indicator won't catch it
-  since it only counts what's *in* the list, not what's missing from it).
+- **Adding a quiz game**: drop a module in `src/games/`, export the same shape
+  as the others (`id`, `title`, `color`, `rounds(age)`, `icon()`, `round(ctx)`),
+  and add it to `src/games/index.js`.
+- **Adding a free-play toy**: drop a module in `src/toys/`, export `id`,
+  `title`, `color`, `icon()` and `mount(ctx)` (no `rounds`/`round` — a toy
+  never ends), and add it to `src/toys/index.js`.
+- **Either way**, also add the new file(s) to the `SHELL` list in
+  `src/cache-manifest.js` (shared by `sw.js` and the offline-ready indicator —
+  missing it there means the new game/toy silently isn't available offline,
+  and the indicator won't catch it since it only counts what's *in* the list,
+  not what's missing from it).
 - **Tracing is single-stroke only.** Multi-stroke glyphs like `A` or `t` need a
   pen lift, which the drag model has no way to express. Adding them means
   teaching the game about stroke sequences first.

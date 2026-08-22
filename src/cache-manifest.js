@@ -7,7 +7,7 @@
    whole point of the offline-ready indicator is that it tells the truth.
 */
 
-export const CACHE_NAME = 'tiny-explorers-v2';
+export const CACHE_NAME = 'tiny-explorers-v3';
 
 export const SHELL = [
   './',
@@ -21,6 +21,7 @@ export const SHELL = [
   './src/state.js',
   './src/ui.js',
   './src/engine.js',
+  './src/toyShell.js',
   './src/offline.js',
   './src/cache-manifest.js',
   './src/games/index.js',
@@ -31,6 +32,11 @@ export const SHELL = [
   './src/games/tracing.js',
   './src/games/differences.js',
   './src/games/maze.js',
+  './src/toys/index.js',
+  './src/toys/drawing.js',
+  './src/toys/dressup.js',
+  './src/toys/music.js',
+  './src/toys/dotToDot.js',
   './icons/icon.svg',
   './icons/icon-192.png',
   './icons/icon-512.png',
