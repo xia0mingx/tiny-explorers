@@ -1,9 +1,8 @@
-/* Drive — steer a car or a little train around an open scene. No road to stay
-   on, no destination, no score: drag anywhere and the vehicle follows,
-   easing toward your finger rather than teleporting to it so it actually
-   feels driven. The dashed road across the park is pure decoration, not a
-   rail — driving across the grass is just as valid as staying on it, same
-   "nothing to get wrong" rule every other toy in Free Play follows.
+/* Drive — steer a car or a little train around a birds-eye town map. The
+   road grid is drawn from directly overhead, but it's still pure decoration,
+   not a rail — driving across a block is just as valid as staying on a
+   road, same "nothing to get wrong" rule every other toy in Free Play
+   follows.
 
    Steering works by chasing a moving target: onMove only updates `target`,
    and one requestAnimationFrame loop eases the vehicle's position toward it
@@ -11,19 +10,25 @@
    car/engine visibly turns into corners instead of snapping to face them.
 
    The train's carriages don't get their own physics — they sample the
-   engine's own recent positions from a rolling history buffer, a fixed
-   number of frames back per carriage. That's the standard "follow the
-   leader" trick: cheap, and it makes the carriages trace the exact path the
-   engine already took rather than cutting corners toward it.
+   engine's own recent positions from a rolling history trail, each one a
+   fixed ARC-LENGTH distance behind the engine (not a fixed number of
+   frames). That distinction matters once the engine stops: easing spends
+   many frames crawling the last few pixels into its resting spot, and a
+   frame-count lookback would spend that whole tail sampling points that are
+   all nearly on top of each other — the carriages visibly bunch into the
+   engine right as it stops. Measuring by distance travelled instead means
+   the carriages stay the same visual distance behind the engine whether
+   it's speeding across the map or gliding to a stop.
 */
 
 import { el, pick } from '../util.js';
-import { spriteBody, PALETTE, shade } from '../art.js';
+import { PALETTE, shade } from '../art.js';
 import { sfx } from '../audio.js';
 
 const EASE = 0.14;
-const HISTORY_MAX = 260;
-const CARRIAGE_GAP = 16; // history samples between the engine and each carriage
+const HISTORY_MAX = 400;
+const MIN_STEP = 2.5;       // only record a new trail point once moved at least this far
+const CARRIAGE_SPACING = 36; // arc-length gap behind the engine per carriage
 const STOP_THRESHOLD = 0.5;
 
 function carBody(color) {
@@ -60,20 +65,36 @@ function carriage(color) {
     <circle cx="13" cy="12" r="7" fill="#403d52"/>`;
 }
 
+/* A birds-eye town: two vertical streets and one horizontal street cut the
+   canvas into six blocks, each given a flat top-down filler (a rooftop, a
+   park with round tree canopies, a pond) so the map reads as a real place
+   rather than an empty grid. Nothing here is a lane the vehicle is held to
+   — it's a backdrop, exactly like the old park scene was. */
+function topTree(cx, cy, r) {
+  return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#5fd6a4"/>
+          <circle cx="${cx - r * 0.3}" cy="${cy - r * 0.3}" r="${r * 0.4}" fill="#8ee36b" opacity=".7"/>`;
+}
+
 function sceneMarkup() {
+  const block = (x, y, w, h, color) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" fill="${color}"/>`;
   return `
-    <rect width="300" height="200" fill="#bfe8ff"/>
-    <svg x="238" y="10" width="42" height="42" viewBox="0 0 100 100">${spriteBody('sun', '#ffc93c')}</svg>
-    <svg x="26" y="16" width="58" height="32" viewBox="0 0 100 100">${spriteBody('cloud')}</svg>
-    <svg x="150" y="8" width="44" height="26" viewBox="0 0 100 100">${spriteBody('cloud')}</svg>
-    <rect x="0" y="148" width="300" height="52" fill="#8ee36b"/>
-    <path d="M0 172 Q150 138 300 172" stroke="#e8e3f2" stroke-width="20"
-          fill="none" stroke-linecap="round"/>
-    <path d="M0 172 Q150 138 300 172" stroke="#fff" stroke-width="3"
-          stroke-dasharray="10 12" fill="none" stroke-linecap="round"/>
-    <svg x="4" y="112" width="48" height="48" viewBox="0 0 100 100">${spriteBody('tree', '#5fd6a4')}</svg>
-    <svg x="252" y="116" width="44" height="44" viewBox="0 0 100 100">${spriteBody('tree', '#5fd6a4')}</svg>
-    <svg x="116" y="150" width="34" height="22" viewBox="0 0 100 100">${spriteBody('bush', '#5fd6a4')}</svg>`;
+    <rect width="300" height="200" fill="#cdeccb"/>
+
+    ${block(14, 14, 68, 68, '#ffd7a8')}
+    ${block(138, 14, 44, 68, '#bfe3c0')}
+    ${topTree(150, 30, 13)}${topTree(172, 54, 11)}
+    ${block(238, 14, 48, 68, '#ffb3c6')}
+    ${block(14, 138, 68, 48, '#a9cdff')}
+    ${block(138, 138, 44, 48, '#ffe6a0')}
+    ${block(238, 138, 48, 48, '#c9b8f2')}
+
+    <rect x="96" y="0" width="28" height="200" fill="#8a869c"/>
+    <rect x="196" y="0" width="28" height="200" fill="#8a869c"/>
+    <rect x="0" y="96" width="300" height="28" fill="#8a869c"/>
+
+    <path d="M110 0 V200" stroke="#fff" stroke-width="3" stroke-dasharray="10 10"/>
+    <path d="M210 0 V200" stroke="#fff" stroke-width="3" stroke-dasharray="10 10"/>
+    <path d="M0 110 H300" stroke="#fff" stroke-width="3" stroke-dasharray="10 10"/>`;
 }
 
 export default {
@@ -95,8 +116,8 @@ export default {
   mount(ctx) {
     let mode = 'car';
     let color = pick(PALETTE);
-    const pos = { x: 150, y: 172 };
-    const target = { x: 150, y: 172 };
+    const pos = { x: 150, y: 110 };
+    const target = { x: 150, y: 110 };
     let angle = 0;
     let dragging = false;
     let rafId = null;
@@ -111,11 +132,24 @@ export default {
     const svg = wrap.querySelector('.drive-svg');
     const rig = wrap.querySelector('.drive-rig');
 
+    // Walks backward through the trail accumulating real distance travelled,
+    // so "36 units behind the engine" means the same visual gap whether the
+    // engine got there by racing across the map or by easing to a stop.
+    function pointBehind(distanceBack) {
+      if (history.length === 0) return { ...pos, angle };
+      let acc = 0;
+      for (let i = history.length - 1; i > 0; i -= 1) {
+        acc += Math.hypot(history[i].x - history[i - 1].x, history[i].y - history[i - 1].y);
+        if (acc >= distanceBack) return history[i - 1];
+      }
+      return history[0];
+    }
+
     function applyTransforms() {
       const engine = rig.querySelector('.drive-engine');
       if (engine) engine.setAttribute('transform', `translate(${pos.x} ${pos.y}) rotate(${angle})`);
       rig.querySelectorAll('.drive-carriage').forEach((carEl, idx) => {
-        const back = history[history.length - 1 - CARRIAGE_GAP * (idx + 1)] || history[0] || { ...pos, angle };
+        const back = pointBehind(CARRIAGE_SPACING * (idx + 1));
         carEl.setAttribute('transform', `translate(${back.x} ${back.y}) rotate(${back.angle})`);
       });
     }
@@ -138,8 +172,11 @@ export default {
       pos.y += dy * EASE;
       if (Math.hypot(dx, dy) > STOP_THRESHOLD) angle = Math.atan2(dy, dx) * (180 / Math.PI);
 
-      history.push({ x: pos.x, y: pos.y, angle });
-      if (history.length > HISTORY_MAX) history.shift();
+      const last = history[history.length - 1];
+      if (!last || Math.hypot(pos.x - last.x, pos.y - last.y) >= MIN_STEP) {
+        history.push({ x: pos.x, y: pos.y, angle });
+        if (history.length > HISTORY_MAX) history.shift();
+      }
 
       applyTransforms();
 

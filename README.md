@@ -86,7 +86,7 @@ wrong, so a session ends whenever the child taps back, not when a round is won.
 | **Dress-Up** | Pick a friend, a colour, and an accessory for a simple character; a shuffle button randomises all three at once. |
 | **Music Maker** | An 8-step, 5-row sequencer tuned to a pentatonic scale, so every combination a child taps sounds pleasant — there's no wrong note. |
 | **Dot to Dot** | Numbered dots trace out a shape — circles and stars through to a car, Mickey-style ears, or a fish — connecting them in order fills it in with colour, then a new shape starts automatically. |
-| **Drive** | Drag a car or a little toy train around an open park scene; the vehicle eases toward your finger and the train's carriages follow the engine's own trail. A Honk button and a colour picker are the only other controls. |
+| **Drive** | Drag a car or a little toy train around a birds-eye town map of streets and blocks; the vehicle eases toward your finger and the train's carriages trail the engine at a fixed distance along its own path. A Honk button and a colour picker are the only other controls. |
 
 ## Design rules
 

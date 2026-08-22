@@ -7,7 +7,7 @@
    whole point of the offline-ready indicator is that it tells the truth.
 */
 
-export const CACHE_NAME = 'tiny-explorers-v4';
+export const CACHE_NAME = 'tiny-explorers-v5';
 
 export const SHELL = [
   './',
