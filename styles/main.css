@@ -1,0 +1,644 @@
+/* Tiny Explorers — tablet-first stylesheet.
+
+   Sizing rule of thumb used throughout: nothing tappable is ever smaller than
+   --tap (88px). Apple's HIG floor is 44pt for adults; toddlers aim far worse and
+   plant a whole fingertip, so everything interactive here is roughly double that.
+   Layout is driven by clamp() against viewport units so the same markup fills a
+   9.7" iPad and a 13" iPad Pro without breakpoints. */
+
+:root {
+  --bg:      #fff7ed;
+  --bg-2:    #ffe9d6;
+  --card:    #ffffff;
+  --ink:     #403d52;
+  --ink-soft:#726e8a;
+  --shadow:  #4a4a68;      /* silhouette fill for the shadow-matching game */
+
+  --pink:   #ff8fab;
+  --yellow: #ffc93c;
+  --mint:   #5fd6a4;
+  --sky:    #6cc0ff;
+  --purple: #b79bff;
+  --coral:  #ff9770;
+  --grass:  #8ee36b;
+
+  --tap: 88px;
+  --radius: 28px;
+  --lift: 0 6px 0 rgba(64, 61, 82, .13), 0 12px 28px rgba(64, 61, 82, .12);
+
+  /* ui-rounded is the soft rounded system face on iPadOS/macOS — exactly the
+     friendly look this needs, with no webfont to download or host. */
+  --font: ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN",
+          "Varela Round", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;                 /* the app never scrolls; each screen fits */
+  overscroll-behavior: none;        /* kills iOS rubber-band drag */
+  background: var(--bg);
+  font-family: var(--font);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;      /* no "copy/look up" popover on long-press */
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;               /* drags belong to the games, not the browser */
+}
+
+#app {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(120% 80% at 50% 0%, var(--bg) 0%, var(--bg-2) 100%);
+  padding:
+    env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+svg { display: block; overflow: visible; }
+
+/* ── Shared chrome ─────────────────────────────────────────────────────── */
+
+.topbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px clamp(14px, 2.4vw, 28px);
+}
+
+.icon-btn {
+  width: var(--tap);
+  height: var(--tap);
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--card);
+  box-shadow: var(--lift);
+  transition: transform .12s ease;
+}
+.icon-btn:active { transform: scale(.92); }
+.icon-btn svg { width: 46%; height: 46%; }
+
+.title-block { flex: 1 1 auto; min-width: 0; }
+.title-block h1 {
+  font-size: clamp(22px, 3vw, 34px);
+  font-weight: 800;
+  letter-spacing: -.4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.title-block p {
+  font-size: clamp(14px, 1.7vw, 19px);
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+/* Star track: one outline per round, filled as the child gets them right. */
+.stars { display: flex; gap: 8px; flex: 0 0 auto; }
+.stars svg { width: clamp(26px, 3.4vw, 40px); height: clamp(26px, 3.4vw, 40px); }
+.stars .star-slot { transition: transform .35s cubic-bezier(.2,1.6,.4,1); }
+.stars .star-slot.pop { transform: scale(1.45) rotate(12deg); }
+
+/* ── Home: age picker ──────────────────────────────────────────────────── */
+
+.screen {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0 clamp(14px, 2.4vw, 32px) clamp(14px, 2.4vw, 28px);
+}
+
+.hero {
+  text-align: center;
+  padding: clamp(8px, 2vh, 26px) 0 clamp(10px, 2.4vh, 26px);
+}
+.hero h1 {
+  font-size: clamp(30px, 5.4vw, 62px);
+  font-weight: 900;
+  letter-spacing: -1.5px;
+  line-height: 1.05;
+}
+.hero p {
+  margin-top: 8px;
+  font-size: clamp(15px, 2.1vw, 24px);
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.age-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(12px, 1.8vw, 24px);
+  align-content: center;
+}
+@media (max-width: 640px) { .age-grid { grid-template-columns: repeat(2, 1fr); } }
+
+.age-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(4px, 1vh, 12px);
+  padding: clamp(10px, 2vh, 26px) 10px;
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--lift);
+  transition: transform .14s ease;
+}
+.age-card:active { transform: scale(.95); }
+.age-card svg { width: clamp(70px, 11vw, 140px); height: clamp(70px, 11vw, 140px); }
+.age-card .age-num {
+  font-size: clamp(34px, 5vw, 62px);
+  font-weight: 900;
+  line-height: 1;
+}
+.age-card .age-label {
+  font-size: clamp(13px, 1.6vw, 19px);
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+/* ── Home: game grid ───────────────────────────────────────────────────── */
+
+.game-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(10px, 1.6vw, 22px);
+  align-content: start;
+  overflow-y: auto;               /* only ever scrolls if a phone is very short */
+  touch-action: pan-y;
+  padding-bottom: 8px;
+}
+@media (max-width: 900px) { .game-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 560px) { .game-grid { grid-template-columns: repeat(2, 1fr); } }
+
+.game-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: clamp(12px, 1.8vh, 22px) 10px clamp(10px, 1.4vh, 16px);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--lift);
+  transition: transform .14s ease;
+}
+.game-card:active { transform: scale(.95); }
+.game-card .thumb {
+  width: clamp(72px, 8.5vw, 116px);
+  height: clamp(72px, 8.5vw, 116px);
+  border-radius: 26px;
+  display: grid;
+  place-items: center;
+}
+.game-card .thumb svg { width: 76%; height: 76%; }
+.game-card h3 {
+  font-size: clamp(14px, 1.7vw, 21px);
+  font-weight: 800;
+  text-align: center;
+  line-height: 1.15;
+}
+.game-card .earned {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: clamp(12px, 1.4vw, 16px);
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+.game-card .earned svg { width: 1.1em; height: 1.1em; }
+
+/* ── Game shell ────────────────────────────────────────────────────────── */
+
+.prompt {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 0 clamp(14px, 2.4vw, 32px) clamp(6px, 1.2vh, 14px);
+  padding: clamp(10px, 1.5vh, 18px) 22px;
+  border-radius: 999px;
+  background: var(--card);
+  box-shadow: var(--lift);
+}
+.prompt span {
+  font-size: clamp(18px, 2.6vw, 32px);
+  font-weight: 800;
+  text-align: center;
+}
+.prompt .icon-btn {
+  width: clamp(46px, 5vw, 60px);
+  height: clamp(46px, 5vw, 60px);
+  background: var(--bg-2);
+  box-shadow: none;
+}
+
+.stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(8px, 1.6vh, 22px);
+  padding: 0 clamp(14px, 2.4vw, 32px) clamp(10px, 1.6vh, 22px);
+}
+
+/* A tappable answer. Deliberately no hover styles anywhere — on a tablet the
+   hover state sticks after a tap and reads as "still selected". */
+.choice {
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--lift);
+  transition: transform .14s ease;
+}
+.choice:active { transform: scale(.94); }
+.choice.correct { animation: pop .5s ease; }
+.choice.wrong   { animation: wobble .45s ease; }
+.choice.dim     { opacity: .35; transition: opacity .3s ease; }
+
+@keyframes pop {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.16) rotate(3deg); }
+  100% { transform: scale(1); }
+}
+/* A wrong tap wobbles and stays put. There is no fail state anywhere in this
+   app: nothing is removed, no score drops, the child just tries again. */
+@keyframes wobble {
+  0%,100% { transform: translateX(0) rotate(0); }
+  20%     { transform: translateX(-9px) rotate(-3deg); }
+  45%     { transform: translateX(8px) rotate(3deg); }
+  70%     { transform: translateX(-5px) rotate(-2deg); }
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 1.8vw, 26px);
+  flex-wrap: wrap;
+}
+.stage-figure {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  width: 100%;
+}
+.stage-figure > svg { max-width: 100%; max-height: 100%; }
+
+.float { animation: float 3s ease-in-out infinite; }
+@keyframes float {
+  0%,100% { transform: translateY(0); }
+  50%     { transform: translateY(-10px); }
+}
+
+/* ── Celebration ───────────────────────────────────────────────────────── */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 2vh, 26px);
+  background: rgba(255, 247, 237, .96);
+  padding: env(safe-area-inset-top) 24px env(safe-area-inset-bottom);
+  animation: fade .3s ease;
+}
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+.overlay h2 {
+  font-size: clamp(32px, 6vw, 72px);
+  font-weight: 900;
+  letter-spacing: -1.5px;
+  text-align: center;
+}
+.overlay .hero-char { width: clamp(120px, 20vw, 240px); height: clamp(120px, 20vw, 240px); }
+.overlay .won-stars { display: flex; gap: 10px; }
+.overlay .won-stars svg { width: clamp(34px, 4.4vw, 56px); height: clamp(34px, 4.4vw, 56px); }
+.overlay .won-stars svg { animation: drop .5s cubic-bezier(.2,1.6,.4,1) backwards; }
+@keyframes drop {
+  from { transform: translateY(-40px) scale(.4); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+
+.big-btn {
+  min-height: var(--tap);
+  padding: 0 clamp(28px, 4vw, 52px);
+  border-radius: 999px;
+  font-size: clamp(19px, 2.4vw, 28px);
+  font-weight: 800;
+  color: #fff;
+  background: var(--mint);
+  box-shadow: 0 6px 0 rgba(0,0,0,.14), 0 12px 24px rgba(0,0,0,.14);
+  transition: transform .12s ease;
+}
+.big-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,.14); }
+.big-btn.ghost { background: var(--card); color: var(--ink); }
+
+.confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 60;
+}
+.confetti i {
+  position: absolute;
+  top: -6vh;
+  width: 14px;
+  height: 20px;
+  border-radius: 4px;
+  animation: fall linear forwards;
+}
+@keyframes fall {
+  to { transform: translateY(112vh) rotate(720deg); }
+}
+
+/* ── Parent settings ───────────────────────────────────────────────────── */
+
+.sheet {
+  width: min(520px, 92vw);
+  padding: clamp(20px, 3vh, 34px);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--lift);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.sheet h2 { font-size: 28px; font-weight: 900; }
+.sheet p  { font-size: 17px; color: var(--ink-soft); font-weight: 600; line-height: 1.4; }
+/* Offline-ready status: a distinct pill rather than body text, since it's
+   answering a specific yes/no question ("safe to leave the house?") rather
+   than just describing the app. */
+.offline-status {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: var(--ink) !important;
+  background: var(--bg);
+  border-radius: 16px;
+  padding: 12px 16px;
+  line-height: 1.35 !important;
+}
+.toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 68px;
+  padding: 0 20px;
+  border-radius: 20px;
+  background: var(--bg);
+  font-size: 20px;
+  font-weight: 800;
+}
+.switch {
+  width: 76px;
+  height: 42px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #d8d4e4;
+  position: relative;
+  transition: background .2s ease;
+}
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 4px; left: 4px;
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,.2);
+  transition: transform .2s ease;
+}
+.switch.on { background: var(--mint); }
+.switch.on::after { transform: translateX(34px); }
+
+/* Long-press ring on the settings gear (see ui.js parentGate). */
+.icon-btn.holding svg { animation: spin 1.4s linear; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.hint {
+  text-align: center;
+  font-size: clamp(13px, 1.5vw, 17px);
+  font-weight: 700;
+  color: var(--ink-soft);
+  padding-top: 6px;
+}
+
+/* ═══ Per-game layout ══════════════════════════════════════════════════════
+   Kept together at the end rather than split into files: the games share the
+   same .choice / .row primitives above and only need sizing on top. */
+
+/* Home: the age chip doubles as the "change age" button. */
+.age-pill span {
+  font-size: clamp(30px, 3.6vw, 42px);
+  font-weight: 900;
+  line-height: 1;
+}
+
+/* ── Counting ──────────────────────────────────────────────────────────── */
+
+.num-card {
+  width: clamp(92px, 10.5vw, 148px);
+  height: clamp(108px, 12.5vw, 168px);
+  flex-direction: column;
+  gap: clamp(4px, .8vh, 10px);
+  padding: 10px;
+}
+.num-card .num {
+  font-size: clamp(42px, 5.6vw, 78px);
+  font-weight: 900;
+  line-height: 1;
+}
+/* Dots wrap at five per row so "10" reads as two fives, not one long smear. */
+.num-card .dots {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: clamp(3px, .5vw, 6px);
+  justify-items: center;
+  max-width: 82%;
+}
+.num-card .dots i {
+  width: clamp(7px, .85vw, 12px);
+  height: clamp(7px, .85vw, 12px);
+  border-radius: 50%;
+  background: var(--ink-soft);
+}
+
+.sum-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(8px, 2vw, 30px);
+  width: 100%;
+  height: 100%;
+}
+.sum-group {
+  flex: 0 1 auto;
+  max-width: 40%;
+  max-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: clamp(6px, 1.2vh, 16px);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, .62);
+}
+.sum-op {
+  font-size: clamp(34px, 5vw, 66px);
+  font-weight: 900;
+  color: var(--ink-soft);
+}
+
+/* ── Shapes ────────────────────────────────────────────────────────────── */
+
+/* The "hole" a block has to fit into: no colour, so form is the only cue. */
+.shape-hole {
+  width: clamp(96px, 15vw, 190px);
+  height: clamp(96px, 15vw, 190px);
+  display: grid;
+  place-items: center;
+  padding: clamp(10px, 1.6vw, 22px);
+  border-radius: 30px;
+  background: #fffdf9;
+  box-shadow: inset 0 4px 14px rgba(64, 61, 82, .12);
+}
+.shape-card {
+  width: clamp(84px, 10vw, 140px);
+  height: clamp(84px, 10vw, 140px);
+  padding: clamp(9px, 1.2vw, 18px);
+}
+
+/* ── Patterns ──────────────────────────────────────────────────────────── */
+
+.pattern-strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(5px, .9vw, 14px);
+  width: 100%;
+  padding: clamp(8px, 1.4vh, 18px) clamp(8px, 1.4vw, 20px);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, .66);
+}
+.pattern-slot {
+  flex: 1 1 0;
+  max-width: clamp(58px, 8vw, 108px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+}
+.pattern-slot.blank {
+  border: 4px dashed #c9c2da;
+  border-radius: 20px;
+  font-size: clamp(26px, 3.4vw, 46px);
+  font-weight: 900;
+  color: #b3aac8;
+}
+.pattern-choice {
+  width: clamp(80px, 9.5vw, 132px);
+  height: clamp(80px, 9.5vw, 132px);
+  padding: clamp(9px, 1.2vw, 18px);
+}
+
+/* ── Shadows ───────────────────────────────────────────────────────────── */
+
+.shadow-target {
+  width: clamp(110px, 17vw, 220px);
+  height: clamp(110px, 17vw, 220px);
+}
+.shadow-card {
+  width: clamp(84px, 10.5vw, 148px);
+  height: clamp(84px, 10.5vw, 148px);
+  padding: clamp(8px, 1.1vw, 16px);
+}
+
+/* ── Tracing ───────────────────────────────────────────────────────────── */
+
+/* Height-driven, not viewport-driven: the stage is what's actually available,
+   and sizing off vh overflowed it on short landscape windows. max-width wins
+   over aspect-ratio when the box would be too wide, and the SVG's viewBox
+   letterboxes inside whatever shape it ends up with. */
+.trace-wrap {
+  height: 100%;
+  aspect-ratio: 3 / 2;
+  max-width: 100%;
+  max-height: 100%;
+  margin: 0 auto;
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--lift);
+  padding: clamp(8px, 1.4vw, 20px);
+}
+.trace-svg { width: 100%; height: 100%; touch-action: none; }
+
+.pulse { animation: pulse 1.4s ease-in-out infinite; transform-box: fill-box;
+         transform-origin: center; }
+@keyframes pulse {
+  0%, 100% { transform: scale(1);    opacity: 1; }
+  50%      { transform: scale(1.22); opacity: .75; }
+}
+
+/* ── Spot the difference ───────────────────────────────────────────────── */
+
+.diff-panels {
+  display: flex;
+  gap: clamp(8px, 1.6vw, 22px);
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+}
+/* Stack the two pictures when the screen is taller than it is wide — side by
+   side in portrait would make each one too small to spot anything in. */
+@media (orientation: portrait) { .diff-panels { flex-direction: column; } }
+
+.diff-panel {
+  flex: 1 1 0;
+  min-width: 0;
+  max-height: 100%;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--card);
+  box-shadow: var(--lift);
+}
+.diff-svg { width: 100%; height: 100%; display: block; }
+.ring { animation: ringIn .4s cubic-bezier(.2,1.6,.4,1); transform-box: fill-box;
+        transform-origin: center; }
+@keyframes ringIn {
+  from { transform: scale(1.9); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+/* ── Maze ──────────────────────────────────────────────────────────────── */
+
+.maze-wrap {
+  height: 100%;
+  aspect-ratio: 1;
+  max-width: 100%;
+  max-height: 100%;
+  margin: 0 auto;
+}
+.maze-svg { width: 100%; height: 100%; touch-action: none; }
