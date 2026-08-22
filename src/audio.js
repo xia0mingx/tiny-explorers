@@ -95,6 +95,12 @@ const EFFECTS = {
     [NOTES.C5, NOTES.E5, NOTES.G5, NOTES.C6, NOTES.E6, NOTES.G6]
       .forEach((n, i) => tone(n, i * 0.1, 0.42, { gain: 0.15 }));
   },
+
+  // A cheerful two-tone "toot" for the Drive toy's horn button.
+  horn: () => {
+    tone(NOTES.G5, 0, 0.16, { type: 'square', gain: 0.1 });
+    tone(NOTES.E5, 0.08, 0.2, { type: 'square', gain: 0.1 });
+  },
 };
 
 export function sfx(name) {

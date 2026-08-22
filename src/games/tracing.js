@@ -20,7 +20,7 @@
    would need a pen-lift the drag model can't express.
 */
 
-import { el, pick, range } from '../util.js';
+import { el, pick, range, noRepeatPicker } from '../util.js';
 import { glyph, PALETTE } from '../art.js';
 
 const SAMPLES = 80;
@@ -35,27 +35,48 @@ const PATHS = {
     { label: 'line',   d: 'M150 30 V170' },
     { label: 'hill',   d: 'M40 150 Q150 20 260 150' },
     { label: 'slide',  d: 'M40 50 L260 150' },
+    { label: 'curve',  d: 'M40 150 Q150 180 260 50' },
   ],
   3: [
     { label: 'zigzag', d: 'M40 145 L95 60 L150 145 L205 60 L260 145' },
     { label: 'wave',   d: 'M30 100 Q67 30 105 100 T180 100 T255 100' },
     { label: 'circle', d: 'M80 100 A70 70 0 1 1 220 100 A70 70 0 1 1 80 100' },
     { label: 'ramp',   d: 'M40 160 Q150 160 150 40' },
+    { label: 'arch',   d: 'M40 160 Q150 10 260 160' },
   ],
   4: [
     { label: 'circle',   d: 'M80 100 A70 70 0 1 1 220 100 A70 70 0 1 1 80 100' },
     { label: 'square',   d: 'M70 40 H230 V160 H70 Z' },
     { label: 'triangle', d: 'M150 32 L245 165 L55 165 Z' },
     { label: 'diamond',  d: 'M150 28 L245 100 L150 172 L55 100 Z' },
+    { label: 'star',     d: 'M150 30 L172 85 L230 85 L184 118 L202 172 L150 138 L98 172 L116 118 L70 85 L128 85 Z' },
   ],
   5: [
+    { label: 'number one',   d: 'M120 55 L150 30 V165' },
     { label: 'number two',   d: 'M100 70 Q100 35 140 35 Q182 35 182 72 Q182 100 100 165 H190' },
     { label: 'number three', d: 'M100 55 Q125 28 152 40 Q182 54 152 96 Q192 102 180 140 Q166 178 102 158' },
+    { label: 'number four',  d: 'M175 165 V35 L95 130 H195' },
+    { label: 'number five',  d: 'M195 40 H120 L112 95 Q170 85 185 120 Q195 145 160 160 Q130 172 105 155' },
     { label: 'letter C',     d: 'M212 60 Q150 14 106 60 Q68 100 106 144 Q150 190 212 144' },
-    { label: 'letter S',     d: 'M200 58 Q150 24 116 54 Q86 84 140 104 Q198 124 174 156 Q144 188 100 156' },
+    { label: 'letter I',     d: 'M150 35 V165' },
     { label: 'letter L',     d: 'M100 35 V165 H215' },
+    { label: 'letter M',     d: 'M85 165 V35 L150 110 L215 35 V165' },
+    { label: 'letter N',     d: 'M90 165 V35 L210 165 V35' },
+    { label: 'letter O',     d: 'M85 100 A65 65 0 1 1 215 100 A65 65 0 1 1 85 100' },
+    { label: 'letter S',     d: 'M200 58 Q150 24 116 54 Q86 84 140 104 Q198 124 174 156 Q144 188 100 156' },
+    { label: 'letter U',     d: 'M90 40 V120 Q90 165 150 165 Q210 165 210 120 V40' },
+    { label: 'letter V',     d: 'M85 35 L150 165 L215 35' },
+    { label: 'letter W',     d: 'M75 35 L110 165 L150 80 L190 165 L225 35' },
+    { label: 'letter Z',     d: 'M85 40 H215 L85 160 H215' },
   ],
 };
+
+// One no-repeat deck per age, built once and reused for the whole session, so
+// a 4-5 round game never shows the same trace twice in a row and cycles
+// through the full pool before anything repeats.
+const pickers = Object.fromEntries(
+  Object.entries(PATHS).map(([age, list]) => [age, noRepeatPicker(list)]),
+);
 
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
@@ -75,7 +96,7 @@ export default {
     </svg>`,
 
   round(ctx) {
-    const spec = pick(PATHS[ctx.age]);
+    const spec = pickers[ctx.age]();
     const color = pick(PALETTE);
     ctx.prompt(`Trace the ${spec.label}`);
 

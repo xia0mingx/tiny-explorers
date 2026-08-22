@@ -7,7 +7,7 @@
    whole point of the offline-ready indicator is that it tells the truth.
 */
 
-export const CACHE_NAME = 'tiny-explorers-v3';
+export const CACHE_NAME = 'tiny-explorers-v4';
 
 export const SHELL = [
   './',
@@ -37,6 +37,7 @@ export const SHELL = [
   './src/toys/dressup.js',
   './src/toys/music.js',
   './src/toys/dotToDot.js',
+  './src/toys/drive.js',
   './icons/icon.svg',
   './icons/icon-192.png',
   './icons/icon-512.png',

@@ -25,6 +25,25 @@ export function sampleWith(arr, count, must) {
   return shuffle([must, ...rest]);
 }
 
+/** Returns a `next()` function that dispenses items from `items` in shuffled
+ *  order with no repeats, reshuffling once the deck runs out. Swaps the new
+ *  deck's first card away from whatever was just drawn, so a reshuffle can
+ *  never hand back the same item twice in a row. Used anywhere a pick() would
+ *  otherwise let the same round/shape come up several times in a short
+ *  session, which reads as "broken" to a child even though it's just chance. */
+export function noRepeatPicker(items) {
+  let deck = [];
+  let last = null;
+  return function next() {
+    if (deck.length === 0) {
+      deck = shuffle(items);
+      if (deck.length > 1 && deck[0] === last) [deck[0], deck[1]] = [deck[1], deck[0]];
+    }
+    last = deck.pop();
+    return last;
+  };
+}
+
 /** Build a DOM element in one call: el('div', {class:'x', onclick:fn}, child...) */
 export function el(tag, props = {}, ...children) {
   const node = document.createElement(tag);

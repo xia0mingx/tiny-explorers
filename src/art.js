@@ -469,23 +469,53 @@ export const ACCESSORY_IDS = ['none', 'bow', 'glasses', 'crown'];
    toy can sample points along them with getPointAtLength() — the same
    technique tracing.js uses to walk a guide path. Any SVG geometry element
    supports this, but keeping these as plain `d` strings means one code path
-   regardless of whether the shape was originally a <path> or a <polygon>. */
+   regardless of whether the shape was originally a <path> or a <polygon>.
+
+   Each entry is an ARRAY of one or more closed subpaths ("groups"). Most
+   shapes are a single group, but a few (Mickey, the car) are naturally drawn
+   as several separate closed loops — a head plus two ears, a body plus two
+   wheels. Dot-to-Dot samples and numbers each group separately and never
+   draws a connecting line between them, so a two-circle "ear" doesn't get a
+   stray line dragged across the middle of the head to reach it. */
 
 const pointsToPath = (points) => {
   const pts = points.trim().split(/\s+/);
   return `M${pts[0]} ${pts.slice(1).map((p) => `L${p}`).join(' ')} Z`;
 };
 
+const circlePath = (cx, cy, r) =>
+  `M${cx - r} ${cy} A${r} ${r} 0 1 1 ${cx + r} ${cy} A${r} ${r} 0 1 1 ${cx - r} ${cy} Z`;
+
 export const SHAPE_OUTLINE = {
-  circle: 'M10 50 A40 40 0 1 1 90 50 A40 40 0 1 1 10 50 Z',
-  square: pointsToPath('11,11 89,11 89,89 11,89'),
-  triangle: pointsToPath('50,8 93,88 7,88'),
-  diamond: pointsToPath('50,6 92,50 50,94 8,50'),
-  star: pointsToPath(starPoly(5, 50, 52, 45, 19)),
-  heart: 'M50 90 C10 62 10 26 32 20 C42 17 50 26 50 33 '
-       + 'C50 26 58 17 68 20 C90 26 90 62 50 90 Z',
+  circle: [circlePath(50, 50, 40)],
+  square: [pointsToPath('11,11 89,11 89,89 11,89')],
+  triangle: [pointsToPath('50,8 93,88 7,88')],
+  diamond: [pointsToPath('50,6 92,50 50,94 8,50')],
+  star: [pointsToPath(starPoly(5, 50, 52, 45, 19))],
+  heart: ['M50 90 C10 62 10 26 32 20 C42 17 50 26 50 33 '
+        + 'C50 26 58 17 68 20 C90 26 90 62 50 90 Z'],
+  moon: ['M66 8 A44 44 0 1 0 66 92 A34 34 0 1 1 66 8 Z'],
+  house: [pointsToPath('15,90 15,45 50,15 85,45 85,90')],
+  cat: [pointsToPath('24,10 34,34 50,26 66,34 76,10 90,46 88,70 66,92 34,92 12,70 10,46')],
+  fish: ['M10 50 Q10 20 40 15 Q65 12 75 30 L92 15 L80 50 L92 85 L75 70 '
+       + 'Q65 88 40 85 Q10 80 10 50 Z'],
+  tree: [pointsToPath('50,8 72,38 58,38 84,66 60,66 60,94 40,94 40,66 16,66 42,38 28,38')],
+  rocket: [pointsToPath('50,6 66,34 66,66 86,92 62,74 62,94 38,94 38,74 14,92 34,66 34,34')],
+  mickey: [circlePath(50, 62, 26), circlePath(26, 28, 16), circlePath(74, 28, 16)],
+  car: [pointsToPath('10,74 10,60 26,60 36,38 64,38 74,60 90,60 90,74'),
+        circlePath(28, 80, 10), circlePath(72, 80, 10)],
 };
 export const OUTLINE_SHAPE_IDS = Object.keys(SHAPE_OUTLINE);
+
+/** Dot-to-Dot shape pools by age: fewer, simpler single-loop shapes for
+ *  younger children, saving the multi-group shapes (which need more dots to
+ *  read clearly) for the ages that already get the biggest dot counts. */
+export const OUTLINE_SHAPES_BY_AGE = {
+  2: ['circle', 'square', 'triangle', 'diamond'],
+  3: ['circle', 'square', 'triangle', 'diamond', 'star', 'heart', 'moon'],
+  4: ['square', 'triangle', 'diamond', 'star', 'heart', 'moon', 'house', 'cat', 'fish', 'tree'],
+  5: ['star', 'heart', 'house', 'cat', 'fish', 'tree', 'rocket', 'mickey', 'car'],
+};
 
 /* ── public API ────────────────────────────────────────────────────────── */
 

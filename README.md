@@ -1,7 +1,7 @@
 # Tiny Explorers
 
 A tablet-first learning app for **2-5 year olds**: seven quiz-style games with
-a difficulty level for each age, plus a Free Play section of four open-ended
+a difficulty level for each age, plus a Free Play section of five open-ended
 toys with no score and no correct answer. Built to be played on an iPad, held
 sideways, by a child who cannot read yet.
 
@@ -75,7 +75,7 @@ attention span being designed for.
 
 ## Free Play
 
-Four open-ended toys, modelled on the Montessori-style "no objective, just
+Five open-ended toys, modelled on the Montessori-style "no objective, just
 tinker" toys in apps like Pok Pok, rather than the quiz format above. Opening
 one never shows a prompt or a star track — there's nothing to get right or
 wrong, so a session ends whenever the child taps back, not when a round is won.
@@ -85,7 +85,8 @@ wrong, so a session ends whenever the child taps back, not when a round is won.
 | **Drawing** | Finger-paint (Brush mode) or tap to place a coloured sprite (Stamp mode), on a blank canvas. Clear is instant — nothing here is precious. |
 | **Dress-Up** | Pick a friend, a colour, and an accessory for a simple character; a shuffle button randomises all three at once. |
 | **Music Maker** | An 8-step, 5-row sequencer tuned to a pentatonic scale, so every combination a child taps sounds pleasant — there's no wrong note. |
-| **Dot to Dot** | Numbered dots trace out a shape; connecting them in order fills it in with colour, then a new shape starts automatically. |
+| **Dot to Dot** | Numbered dots trace out a shape — circles and stars through to a car, Mickey-style ears, or a fish — connecting them in order fills it in with colour, then a new shape starts automatically. |
+| **Drive** | Drag a car or a little toy train around an open park scene; the vehicle eases toward your finger and the train's carriages follow the engine's own trail. A Honk button and a colour picker are the only other controls. |
 
 ## Design rules
 
@@ -126,7 +127,8 @@ index.html
   src/engine.js           quiz shell: round loop, star track, celebration
   src/toyShell.js         free-play shell: just chrome + teardown, no rounds
   src/games/*.js          one module per quiz game — renders a round, calls ctx.win()
-  src/toys/*.js           one module per free-play toy — no win state at all
+  src/toys/*.js           one module per free-play toy (drawing, dress-up,
+                          music, dot to dot, drive) — no win state at all
   src/art.js              every sprite, drawn in code
   src/audio.js            WebAudio effects + on-demand speech synthesis
   src/state.js            localStorage (age, stars, sound/speech settings)
