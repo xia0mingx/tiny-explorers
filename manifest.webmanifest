@@ -6,7 +6,7 @@
   "scope": "./",
   "display": "fullscreen",
   "display_override": ["fullscreen", "standalone"],
-  "orientation": "landscape",
+  "orientation": "any",
   "background_color": "#fff7ed",
   "theme_color": "#fff7ed",
   "categories": ["education", "kids", "games"],

@@ -230,6 +230,21 @@ no Pillow). PNGs are needed because iPadOS's "Add to Home Screen" reads
   need to force a clean re-cache.
 - Speech voice quality varies a lot by platform — iPadOS is good, Windows
   Chrome is robotic. Judge the audio on the actual target device.
+- **A percentage `height`/`max-height` only resolves against a definite ancestor
+  height.** Counting's addition round (`.sum-row` > `.sum-group` > an SVG with
+  `height:100%`) violated this: `.stage-figure` centers its item
+  (`place-items: center`) rather than stretching it, so the chain of ancestors
+  is never definite, and the SVG (viewBox only, no width/height attributes)
+  fell back to the browser's default replaced-element size. On a roomy iPad
+  that overflow went unnoticed; confirmed on a phone in landscape (844×390)
+  each group rendered at a runaway 312×312 and swallowed the answer row
+  underneath it. Fixed by giving `.sum-group` an explicit `clamp()` height
+  instead of a percentage, and switching the SVG to `object-fit: contain`
+  (which needs a definite box to fit *within*, but doesn't need one to
+  resolve in the first place) so it scales down instead of overflowing.
+  Any new per-game figure that nests another wrapper div between
+  `.stage-figure` and its SVG should size that wrapper explicitly rather than
+  with `height: 100%` for the same reason.
 - **`.overlay` (the celebration screen and the settings sheet) centers via
   auto margins on its first/last child, not `justify-content: center`.**
   Content taller than the viewport is common on a phone in landscape (confirmed

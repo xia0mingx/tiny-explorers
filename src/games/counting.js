@@ -39,8 +39,11 @@ function groupSvg(name, n, colors) {
             </g>`;
   }).join('');
 
+  // object-fit:contain (not max-height:100%) so the group scales down to
+  // fit .sum-group's box while keeping its own aspect ratio — see
+  // .sum-group's CSS comment for why max-height:100% doesn't work here.
   return `<svg viewBox="0 0 ${cols * 106} ${rows * 106}"
-               style="width:100%;height:100%;max-height:100%" aria-hidden="true">
+               style="width:100%;height:100%;object-fit:contain" aria-hidden="true">
             ${cells}
           </svg>`;
 }

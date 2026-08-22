@@ -520,8 +520,18 @@ svg { display: block; overflow: visible; }
 }
 .sum-group {
   flex: 0 1 auto;
+  min-width: 0;
+  min-height: 0;
   max-width: 40%;
-  max-height: 100%;
+  /* An explicit height, not max-height:100% — that percentage needs a
+     definite ancestor height to resolve against, and .stage-figure centers
+     its item (place-items:center) rather than stretching it, so the chain
+     never becomes definite. The group's SVG (viewBox only, no width/height
+     attributes) then falls back to the browser's default replaced-element
+     size, which only goes unnoticed on a roomy iPad. Confirmed on a phone
+     in landscape (844x390): each group rendered at a runaway 312x312 and
+     swallowed the answer row underneath it. */
+  height: clamp(56px, 20vh, 220px);
   display: grid;
   place-items: center;
   padding: clamp(6px, 1.2vh, 16px);
