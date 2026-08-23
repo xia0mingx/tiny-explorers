@@ -153,8 +153,12 @@ export default {
     });
 
     // ── toolbar ──────────────────────────────────────────────────────────
+    // One wrapping row rather than mode/options/palette on three separate
+    // lines — a tablet-width screen packs most or all of it onto one or two
+    // lines instead of three, so the toolbar takes less height and the
+    // canvas gets the rest. Narrow screens just wrap further, same as before.
     function renderToolbar() {
-      const modeRow = el('div', { class: 'draw-row' },
+      const row = el('div', { class: 'draw-row' },
         el('button', {
           class: `draw-mode ${mode === 'brush' ? 'active' : ''}`, text: 'Brush',
           onclick: () => { mode = 'brush'; sfx('tap'); renderToolbar(); },
@@ -170,17 +174,16 @@ export default {
           onclick: () => { g.clearRect(0, 0, canvas.width, canvas.height); sfx('sparkle'); },
         }));
 
-      const optionsRow = el('div', { class: 'draw-row' });
       if (mode === 'brush') {
         BRUSH_SIZES.forEach((s) => {
-          optionsRow.append(el('button', {
+          row.append(el('button', {
             class: `brush-size ${s === brushSize ? 'active' : ''}`,
             onclick: () => { brushSize = s; sfx('tap'); renderToolbar(); },
           }, el('span', { style: { width: `${s}px`, height: `${s}px` } })));
         });
       } else {
         STAMP_SPRITES.forEach((sId) => {
-          optionsRow.append(el('button', {
+          row.append(el('button', {
             class: `stamp-choice ${sId === stamp ? 'active' : ''}`,
             html: `<svg viewBox="0 0 100 100">${spriteBody(sId, color)}</svg>`,
             onclick: () => { stamp = sId; sfx('tap'); renderToolbar(); },
@@ -188,16 +191,15 @@ export default {
         });
       }
 
-      const paletteRow = el('div', { class: 'draw-row' });
       PALETTE.forEach((c) => {
-        paletteRow.append(el('button', {
+        row.append(el('button', {
           class: `swatch ${c === color ? 'active' : ''}`,
           style: { background: c },
           onclick: () => { color = c; sfx('tap'); renderToolbar(); },
         }));
       });
 
-      toolbar.replaceChildren(modeRow, optionsRow, paletteRow);
+      toolbar.replaceChildren(row);
     }
 
     renderToolbar();

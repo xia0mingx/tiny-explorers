@@ -226,8 +226,13 @@ export default {
       if (rafId) cancelAnimationFrame(rafId);
     });
 
+    // One wrapping row rather than mode buttons + swatches on separate lines
+    // — on a tablet-width screen this packs onto a single line, so the
+    // toolbar takes about half the vertical space and the map gets the rest.
+    // Narrow screens still wrap it to two lines exactly as before; nothing
+    // gets cut off, it just costs more height there than on a tablet.
     function renderToolbar() {
-      const modeRow = el('div', { class: 'drive-row' },
+      const row = el('div', { class: 'drive-row' },
         el('button', {
           class: `drive-mode ${mode === 'car' ? 'active' : ''}`, text: 'Car',
           onclick: () => { mode = 'car'; sfx('tap'); renderToolbar(); rebuildRig(); },
@@ -241,16 +246,15 @@ export default {
           onclick: () => sfx('horn'),
         }));
 
-      const paletteRow = el('div', { class: 'drive-row' });
       PALETTE.forEach((c) => {
-        paletteRow.append(el('button', {
+        row.append(el('button', {
           class: `swatch ${c === color ? 'active' : ''}`,
           style: { background: c },
           onclick: () => { color = c; sfx('tap'); renderToolbar(); rebuildRig(); },
         }));
       });
 
-      toolbar.replaceChildren(modeRow, paletteRow);
+      toolbar.replaceChildren(row);
     }
 
     renderToolbar();
