@@ -814,16 +814,63 @@ svg { display: block; overflow: visible; }
 .dressup-swatch svg { width: 100%; height: 100%; }
 .dressup-color { width: 100%; height: 100%; border-radius: 50%; }
 
+.dressup-actions {
+  justify-content: center;
+  gap: 16px;
+  margin-top: 4px;
+}
 .dressup-shuffle {
-  align-self: center;
+  flex: 0 0 auto;
   width: var(--tap);
   height: var(--tap);
   border-radius: 50%;
   background: var(--card);
   box-shadow: var(--lift);
-  margin-top: 4px;
 }
 .dressup-shuffle svg { width: 60%; height: 60%; margin: 0 auto; }
+.dressup-scene-btn { flex: 0 0 auto; }
+
+/* ── Dress-Up: scene placement ─────────────────────────────────────────── */
+
+.dressup-scene-wrap {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(6px, 1.4vh, 16px);
+}
+.dressup-backdrop-row {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.dressup-backdrop-btn {
+  min-height: 52px;
+  padding: 0 22px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 15px;
+  background: var(--card);
+  box-shadow: var(--lift);
+  color: var(--ink-soft);
+}
+.dressup-backdrop-btn.active { background: var(--purple); color: #fff; }
+
+.dressup-scene {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  max-width: 720px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--lift);
+}
+.dressup-scene-svg { width: 100%; height: 100%; touch-action: none; display: block; }
+.dressup-character { cursor: grab; }
 
 /* ── Music Maker ───────────────────────────────────────────────────────── */
 

@@ -85,7 +85,7 @@ wrong, so a session ends whenever the child taps back, not when a round is won.
 | Toy | What it is |
 |---|---|
 | **Drawing** | Finger-paint (Brush mode) or tap to place a coloured sprite (Stamp mode), on a blank canvas. Clear is instant — nothing here is precious. |
-| **Dress-Up** | Pick a friend, a colour, and an accessory for a simple character; a shuffle button randomises all three at once. |
+| **Dress-Up** | Pick a friend (5 shapes), a colour, a costume (6 outfits) and a hat (7 accessories) — over 2,000 combinations; a shuffle button randomises all four at once. "Place in a scene" then drops the finished character onto a house, park, space, or beach backdrop to drag around. |
 | **Music Maker** | An 8-step, 5-row sequencer tuned to a pentatonic scale, so every combination a child taps sounds pleasant — there's no wrong note. |
 | **Dot to Dot** | Numbered dots trace out a shape — circles and stars through to a car, Mickey-style ears, or a fish — connecting them in order fills it in with colour, then a new shape starts automatically. |
 | **Drive** | Drag a car or a little toy train around a birds-eye town map of streets and blocks; the vehicle eases toward your finger and the train's carriages trail the engine at a fixed distance along its own path. A Honk button and a colour picker are the only other controls. |
@@ -252,6 +252,15 @@ no Pillow). PNGs are needed because iPadOS's "Add to Home Screen" reads
   clips the overflow off the top with no way to scroll to it, while auto
   margins collapse to 0 once content doesn't fit and fall back to normal
   top-down scrolling. Don't "simplify" this back to `justify-content: center`.
+- **Sprite names in `art.js` are one flat namespace** (`add(name, fn)` writes
+  into a single `SPRITES` table; a later `add()` with the same name silently
+  overwrites an earlier one). Dress-Up's two newest bodies are named `puff`
+  and `sparkle`, not the more obvious `cloud`/`star` — those names are
+  already taken by the Spot the Difference background prop and the Shapes
+  game's star, both defined earlier in the file, and reusing them would have
+  put a face on every background cloud and on what's supposed to be a plain
+  geometric star. Check `PROPS`/`SHAPES`/`ANIMALS`/`OBJECTS`/`BUDDIES` before
+  naming a new sprite.
 - No test suite. Verification so far has been done by driving the real app in a
   browser; if this grows, the pure logic worth testing first is maze generation,
   pattern sequencing, and the tracing waypoint advance.

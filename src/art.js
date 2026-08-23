@@ -417,8 +417,10 @@ for (const [id, fn] of Object.entries(SHAPE_ART)) add(id, fn);
    Deliberately new, simple silhouettes rather than reusing the animal
    sprites: animals' ears/features sit at wildly different heights (bunny's
    ears rise almost off-canvas, a fish has no head at all), which would need
-   per-animal anchor tuning for accessories to sit right. These three share
-   one consistent head-top so a bow/glasses/crown looks right on any of them. */
+   per-animal anchor tuning for accessories to sit right. These share one
+   consistent head-top and a face roughly centred at (50, 50-64) so a
+   bow/glasses/crown and the OUTFIT overlays below all land in a sane spot
+   on any of them, even the two that aren't circle-ish (cloud, star). */
 
 add('blob', (c) => `
   <circle cx="50" cy="58" r="38" fill="${c}"/>
@@ -438,7 +440,27 @@ add('boxy', (c) => `
   ${smile(62, 6)}
   ${blush(58, 24)}`);
 
-export const BUDDIES = ['blob', 'egg', 'boxy'];
+/* Named "puff"/"sparkle" rather than "cloud"/"star" — those names are
+   already taken by the scene-prop cloud and the geometric star shape, and
+   add() overwrites by name. A collision here would silently put a face on
+   every background cloud in Spot the Difference and on the Shapes game's
+   star option. */
+add('puff', (c) => `
+  <circle cx="32" cy="60" r="20" fill="${c}"/>
+  <circle cx="58" cy="50" r="26" fill="${c}"/>
+  <circle cx="78" cy="62" r="18" fill="${c}"/>
+  <rect x="28" y="58" width="52" height="24" rx="12" fill="${c}"/>
+  ${eyes(52, 13)}
+  ${smile(66, 6)}
+  ${blush(62, 24)}`);
+
+add('sparkle', (c) => `
+  <polygon points="${starPoly(5, 50, 54, 44, 19)}" fill="${c}"/>
+  ${eyes(48, 12)}
+  ${smile(60, 5.5)}
+  ${blush(56, 22)}`);
+
+export const BUDDIES = ['blob', 'egg', 'boxy', 'puff', 'sparkle'];
 
 /** Overlays composited on top of a buddy body by the Dress-Up toy. Each
  *  carries its own default colours (ignoring any argument) so a picker
@@ -461,8 +483,76 @@ export const ACCESSORY = {
     <circle cx="36" cy="6" r="3" fill="#ff6b8a"/>
     <circle cx="50" cy="18" r="3" fill="#5fd6a4"/>
     <circle cx="64" cy="6" r="3" fill="#6cc0ff"/>`,
+  cap: () => `
+    <path d="M22 30 Q50 4 78 30 L78 32 Q50 19 22 32 Z" fill="#5ec8d8"/>
+    <ellipse cx="19" cy="31" rx="13" ry="5" fill="${shade('#5ec8d8', -30)}"/>`,
+  flower: () => `
+    <g transform="translate(70,24)">
+      <circle cx="0" cy="-8" r="5.4" fill="#ff8fab"/>
+      <circle cx="7" cy="-3" r="5.4" fill="#ff8fab"/>
+      <circle cx="6" cy="6" r="5.4" fill="#ff8fab"/>
+      <circle cx="-3" cy="8" r="5.4" fill="#ff8fab"/>
+      <circle cx="-7" cy="0" r="5.4" fill="#ff8fab"/>
+      <circle cx="0" cy="0" r="4" fill="#ffd449"/>
+    </g>`,
+  partyHat: () => `
+    <path d="M50 2 L67 34 L33 34 Z" fill="#b79bff"/>
+    <circle cx="50" cy="2" r="4.4" fill="#ffd449"/>
+    <circle cx="41" cy="20" r="2.8" fill="#ffd449"/>
+    <circle cx="59" cy="26" r="2.8" fill="#fff"/>
+    <circle cx="46" cy="28" r="2.8" fill="#fff"/>`,
 };
-export const ACCESSORY_IDS = ['none', 'bow', 'glasses', 'crown'];
+export const ACCESSORY_IDS = ['none', 'bow', 'glasses', 'crown', 'cap', 'flower', 'partyHat'];
+
+/** "Costume" overlays for the Dress-Up toy — clothing rather than headwear,
+ *  composited on the lower half of a buddy body. Each has its own fixed
+ *  colours for the same reason ACCESSORY does. Most only need a `front`
+ *  layer (drawn over the body), but `cape` also needs a `behind` layer
+ *  (drawn under the body, so it appears to flow out from the shoulders
+ *  rather than sitting flat on top of the body shape). */
+export const OUTFIT = {
+  none: { behind: () => '', front: () => '' },
+  shirt: {
+    behind: () => '',
+    front: () => `
+      <path d="M28 64 L38 58 Q50 66 62 58 L72 64 L68 75 L64 70 L64 94
+               Q50 98 36 94 L36 70 L32 75 Z" fill="#ffc93c"/>
+      <circle cx="50" cy="80" r="3.2" fill="${shade('#ffc93c', -35)}"/>`,
+  },
+  dress: {
+    behind: () => '',
+    front: () => `
+      <path d="M36 58 Q50 66 64 58 L70 66 Q80 92 68 97 Q50 101 32 97
+               Q20 92 30 66 Z" fill="#ff6b8a"/>
+      <path d="M42 59 Q50 65 58 59" stroke="${shade('#ff6b8a', -35)}"
+            stroke-width="2.4" fill="none" stroke-linecap="round"/>`,
+  },
+  overalls: {
+    behind: () => '',
+    front: () => `
+      <path d="M34 70 L34 96 Q50 100 66 96 L66 70 L58 70 L58 80 L42 80
+               L42 70 Z" fill="#6cc0ff"/>
+      <rect x="36" y="52" width="6" height="18" rx="2" fill="#6cc0ff"/>
+      <rect x="58" y="52" width="6" height="18" rx="2" fill="#6cc0ff"/>
+      <circle cx="38" cy="73" r="2.6" fill="${shade('#6cc0ff', -40)}"/>
+      <circle cx="62" cy="73" r="2.6" fill="${shade('#6cc0ff', -40)}"/>`,
+  },
+  cape: {
+    behind: () => `
+      <path d="M22 40 Q10 90 30 99 L50 86 L70 99 Q90 90 78 40
+               Q64 55 50 47 Q36 55 22 40 Z" fill="#ff5d73"/>`,
+    front: () => `<path d="M44 66 L50 58 L56 66 L50 79 Z" fill="#ffd449"/>`,
+  },
+  astronaut: {
+    behind: () => '',
+    front: () => `
+      <path d="M30 60 Q50 70 70 60 L74 91 Q50 99 26 91 Z" fill="#f4f6fb"/>
+      <path d="M30 60 Q50 68 70 60" stroke="#c9c2da" stroke-width="2.6" fill="none"/>
+      <circle cx="50" cy="77" r="9" fill="#6cc0ff" opacity=".85"/>
+      <circle cx="50" cy="77" r="9" fill="none" stroke="#c9c2da" stroke-width="2.4"/>`,
+  },
+};
+export const OUTFIT_IDS = ['none', 'shirt', 'dress', 'overalls', 'cape', 'astronaut'];
 
 /* ── dot-to-dot outlines ───────────────────────────────────────────────────
    Raw path `d` strings (not full renderSprite() output) so the Dot-to-Dot
