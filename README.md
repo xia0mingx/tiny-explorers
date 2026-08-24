@@ -230,21 +230,24 @@ no Pillow). PNGs are needed because iPadOS's "Add to Home Screen" reads
   need to force a clean re-cache.
 - Speech voice quality varies a lot by platform — iPadOS is good, Windows
   Chrome is robotic. Judge the audio on the actual target device.
-- **A percentage `height`/`max-height` only resolves against a definite ancestor
-  height.** Counting's addition round (`.sum-row` > `.sum-group` > an SVG with
-  `height:100%`) violated this: `.stage-figure` centers its item
-  (`place-items: center`) rather than stretching it, so the chain of ancestors
-  is never definite, and the SVG (viewBox only, no width/height attributes)
-  fell back to the browser's default replaced-element size. On a roomy iPad
-  that overflow went unnoticed; confirmed on a phone in landscape (844×390)
-  each group rendered at a runaway 312×312 and swallowed the answer row
-  underneath it. Fixed by giving `.sum-group` an explicit `clamp()` height
-  instead of a percentage, and switching the SVG to `object-fit: contain`
-  (which needs a definite box to fit *within*, but doesn't need one to
-  resolve in the first place) so it scales down instead of overflowing.
-  Any new per-game figure that nests another wrapper div between
-  `.stage-figure` and its SVG should size that wrapper explicitly rather than
-  with `height: 100%` for the same reason.
+- **`display: grid` silently breaks a percentage `height` on an `<svg>` child**
+  (viewBox only, no width/height attributes) **in this browser — `display: flex`
+  or a plain block container resolves the exact same percentage correctly.**
+  Confirmed in isolation (a bare `width:400px;height:100px` box, no flex/grid
+  tricks involved): `display:grid` gives the SVG its own oversized intrinsic
+  size regardless of `place-items`/`align-items` (`center` and `stretch` both
+  fail identically), while `display:flex` on the identical markup gives it the
+  correct 100px. `.stage-figure` and `.sum-group` were both `display:grid` and
+  both hit this — Counting's addition round (`.sum-row` > `.sum-group` > an SVG
+  with `height:100%`) rendered each group at a runaway intrinsic size and
+  swallowed the answer row underneath it; the *simple* (non-addition) round
+  had the identical bug but it went unnoticed because a square container plus
+  a square-ish sprite grid coincidentally produced the right size anyway. Fixed
+  by switching both to `display:flex` with `align-items`/`justify-content:
+  center`. `.choice`-card games (Shapes/Shadows/Patterns) use `display:grid`
+  too but are safe *only* because their card is always square and their sprite
+  viewBox is always 1:1 — that's a coincidence, not a guarantee, so don't copy
+  their pattern for a new figure with a non-square viewBox.
 - **`.overlay` (the celebration screen and the settings sheet) centers via
   auto margins on its first/last child, not `justify-content: center`.**
   Content taller than the viewport is common on a phone in landscape (confirmed
@@ -261,6 +264,16 @@ no Pillow). PNGs are needed because iPadOS's "Add to Home Screen" reads
   put a face on every background cloud and on what's supposed to be a plain
   geometric star. Check `PROPS`/`SHAPES`/`ANIMALS`/`OBJECTS`/`BUDDIES` before
   naming a new sprite.
+- **The topbar's icon-btn (back button / gear / age pill) shrinks from `--tap`
+  (88px) to 64px below `max-height: 500px`** — a phone in landscape has only
+  ~350-430px of total height, and a fixed 116px-tall topbar was eating a much
+  bigger share of that than it does on the iPad this was tuned for. This is a
+  deliberate, narrowly-scoped exception: `--tap`'s "never smaller than 88px"
+  rule is about the child's actual answer/game buttons, and the topbar's back
+  button and star track are parent-facing chrome the child doesn't
+  deliberately target the way they do a `.choice` card. Don't lower `--tap`
+  itself, and don't extend this shrink to anything the child actually plays
+  with.
 - No test suite. Verification so far has been done by driving the real app in a
   browser; if this grows, the pure logic worth testing first is maze generation,
   pattern sequencing, and the tracing waypoint advance.

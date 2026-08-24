@@ -69,8 +69,8 @@ svg { display: block; overflow: visible; }
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px clamp(14px, 2.4vw, 28px);
+  gap: clamp(8px, 1.8vh, 14px);
+  padding: clamp(6px, 1.6vh, 14px) clamp(14px, 2.4vw, 28px);
 }
 
 .icon-btn {
@@ -82,7 +82,7 @@ svg { display: block; overflow: visible; }
   border-radius: 50%;
   background: var(--card);
   box-shadow: var(--lift);
-  transition: transform .12s ease;
+  transition: transform .12s ease, width .15s ease, height .15s ease;
 }
 .icon-btn:active { transform: scale(.92); }
 .icon-btn svg { width: 46%; height: 46%; }
@@ -107,6 +107,24 @@ svg { display: block; overflow: visible; }
 .stars svg { width: clamp(26px, 3.4vw, 40px); height: clamp(26px, 3.4vw, 40px); }
 .stars .star-slot { transition: transform .35s cubic-bezier(.2,1.6,.4,1); }
 .stars .star-slot.pop { transform: scale(1.45) rotate(12deg); }
+
+/* A phone in landscape has ~350-430px of total height to work with, and the
+   topbar's own --tap (88px) icon-btn plus padding was eating a fixed 116px
+   of it regardless — a much bigger share than on the iPad this was tuned
+   for. --tap's "never smaller than 88px" rule is about the child's actual
+   answer/game buttons; the topbar's back button and star track are
+   parent-facing chrome the child rarely deliberately targets, so this is a
+   deliberate, scoped exception rather than a rule change — everything
+   elsewhere still holds the line at --tap. 64px keeps it comfortably above
+   Apple's own 44pt adult minimum while giving real height back to the game. */
+@media (max-height: 500px) {
+  .topbar { gap: 8px; padding: 5px clamp(14px, 2.4vw, 28px); }
+  .topbar .icon-btn { width: 64px; height: 64px; }
+  .title-block h1 { font-size: 19px; }
+  .title-block p { font-size: 12px; }
+  .stars { gap: 4px; }
+  .stars svg { width: 22px; height: 22px; }
+}
 
 /* ── Home: age picker ──────────────────────────────────────────────────── */
 
@@ -307,11 +325,24 @@ svg { display: block; overflow: visible; }
   gap: clamp(10px, 1.8vw, 26px);
   flex-wrap: wrap;
 }
+/* display:flex, not grid — confirmed in isolation that a percentage
+   height on an <svg> child (viewBox only, no width/height attributes)
+   silently fails to resolve inside a `display:grid` container specifically
+   (falls back to the SVG's own intrinsic size instead), while an identical
+   flex or block container resolves it correctly. Counting's groupSvg()
+   output — a non-square viewBox sized via inline `height:100%` — hit this
+   directly: it rendered at its own oversized intrinsic size and overflowed
+   past .stage-figure into the answer row below. Games whose stage-figure
+   child has its own square, explicitly-sized box (shapes/shadows/patterns'
+   `.choice` cards) never hit this, purely because their 1:1 viewBox
+   coincidentally matches their square container even when broken — don't
+   take that as proof grid is safe here. */
 .stage-figure {
   flex: 1 1 auto;
   min-height: 0;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
 }
 .stage-figure > svg { max-width: 100%; max-height: 100%; }
@@ -523,17 +554,23 @@ svg { display: block; overflow: visible; }
   min-width: 0;
   min-height: 0;
   max-width: 40%;
-  /* An explicit height, not max-height:100% — that percentage needs a
-     definite ancestor height to resolve against, and .stage-figure centers
-     its item (place-items:center) rather than stretching it, so the chain
-     never becomes definite. The group's SVG (viewBox only, no width/height
-     attributes) then falls back to the browser's default replaced-element
-     size, which only goes unnoticed on a roomy iPad. Confirmed on a phone
-     in landscape (844x390): each group rendered at a runaway 312x312 and
-     swallowed the answer row underneath it. */
-  height: clamp(56px, 20vh, 220px);
-  display: grid;
-  place-items: center;
+  /* An explicit height, not max-height:100% — percentage max-height/height
+     needs a definite ancestor height to resolve against at all, so an
+     `auto`-height ancestor is never enough. The 15vh coefficient is tuned
+     against the shortest realistic phone-landscape height (iPhone SE-class,
+     ~320px) so the group plus the answer row's 108px floor plus gaps never
+     exceeds what .stage actually has there. display:flex, not grid, is the
+     OTHER half of the fix — see .stage-figure's comment: a display:grid
+     container silently fails to resolve percentage height on an <svg> child
+     even when the container's own height is genuinely definite (confirmed
+     in isolation), so this alone wasn't sufficient without also dropping
+     grid. Confirmed on a phone in landscape (844x390): each group rendered
+     at its own oversized intrinsic size and swallowed the answer row
+     underneath it. */
+  height: clamp(48px, 15vh, 200px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: clamp(6px, 1.2vh, 16px);
   border-radius: 24px;
   background: rgba(255, 255, 255, .62);
