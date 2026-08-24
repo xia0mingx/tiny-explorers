@@ -11,8 +11,8 @@
    a shipped change, not two that can drift apart. Bump both together.
 */
 
-export const CACHE_NAME = 'tiny-explorers-v11';
-export const APP_VERSION = '1.6.3';
+export const CACHE_NAME = 'tiny-explorers-v12';
+export const APP_VERSION = '1.7.0';
 
 export const SHELL = [
   './',
@@ -37,12 +37,14 @@ export const SHELL = [
   './src/games/tracing.js',
   './src/games/differences.js',
   './src/games/maze.js',
+  './src/games/balance.js',
   './src/toys/index.js',
   './src/toys/drawing.js',
   './src/toys/dressup.js',
   './src/toys/music.js',
   './src/toys/dotToDot.js',
   './src/toys/drive.js',
+  './src/toys/gears.js',
   './icons/icon.svg',
   './icons/icon-192.png',
   './icons/icon-512.png',

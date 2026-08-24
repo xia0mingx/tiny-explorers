@@ -8,5 +8,6 @@ import dressup from './dressup.js';
 import music from './music.js';
 import dotToDot from './dotToDot.js';
 import drive from './drive.js';
+import gears from './gears.js';
 
-export const TOYS = [drawing, dressup, music, dotToDot, drive];
+export const TOYS = [drawing, dressup, music, dotToDot, drive, gears];

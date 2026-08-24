@@ -1,7 +1,7 @@
 # Tiny Explorers
 
-A tablet-first learning app for **2-5 year olds**: seven quiz-style games with
-a difficulty level for each age, plus a Free Play section of five open-ended
+A tablet-first learning app for **2-5 year olds**: eight quiz-style games with
+a difficulty level for each age, plus a Free Play section of six open-ended
 toys with no score and no correct answer. Built to be played on an iPad, held
 sideways, by a child who cannot read yet — but every screen also fits a phone,
 portrait or landscape, since a parent handing over their phone for five
@@ -70,6 +70,7 @@ star progress actually durable.
 | **Tracing** | pre-writing | lines, arcs | zigzag, wave, circle | circle, square, triangle | **numbers and letters** |
 | **Mazes** | planning | 3x3 | 4x4 | 5x5 | 6x6 |
 | **Spot It** | attention to detail | 1 difference | 2 | 3 | 4, incl. mirrored |
+| **Balance Scale** | comparison / early physics | up to 3 items/side | up to 4 | up to 6 | up to 8 |
 
 Each session is a handful of rounds (3-6 depending on the game) and ends in a
 celebration, which keeps a sitting to roughly two to four minutes — about the
@@ -77,7 +78,7 @@ attention span being designed for.
 
 ## Free Play
 
-Five open-ended toys, modelled on the Montessori-style "no objective, just
+Six open-ended toys, modelled on the Montessori-style "no objective, just
 tinker" toys in apps like Pok Pok, rather than the quiz format above. Opening
 one never shows a prompt or a star track — there's nothing to get right or
 wrong, so a session ends whenever the child taps back, not when a round is won.
@@ -89,6 +90,7 @@ wrong, so a session ends whenever the child taps back, not when a round is won.
 | **Music Maker** | An 8-step, 5-row sequencer tuned to a pentatonic scale, so every combination a child taps sounds pleasant — there's no wrong note. |
 | **Dot to Dot** | Numbered dots trace out a shape — circles and stars through to a car, Mickey-style ears, or a fish — connecting them in order fills it in with colour, then a new shape starts automatically. |
 | **Drive** | Drag a car or a little toy train around a birds-eye town map of streets and blocks; the vehicle eases toward your finger and the train's carriages trail the engine at a fixed distance along its own path. A Honk button and a colour picker are the only other controls. |
+| **Gear Machine** | Tap any gear in a meshed chain of three and watch the whole chain spin — each neighbour turns the opposite way, faster or slower by its size, exactly like a real gear train. Repeated taps add more spin, capped, and gradually wind down. A shuffle button just recolours the gears. |
 
 ## Design rules
 
@@ -130,7 +132,7 @@ index.html
   src/toyShell.js         free-play shell: just chrome + teardown, no rounds
   src/games/*.js          one module per quiz game — renders a round, calls ctx.win()
   src/toys/*.js           one module per free-play toy (drawing, dress-up,
-                          music, dot to dot, drive) — no win state at all
+                          music, dot to dot, drive, gears) — no win state at all
   src/art.js              every sprite, drawn in code
   src/audio.js            WebAudio effects + on-demand speech synthesis
   src/state.js            localStorage (age, stars, sound/speech settings)
