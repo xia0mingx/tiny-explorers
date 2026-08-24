@@ -155,7 +155,7 @@ re-discovering that bug.
 
 ### Artwork is code, and silhouettes are derived
 
-`art.js` holds 42 sprites, each a function returning SVG inside a 100x100 box.
+`art.js` holds 47 sprites, each a function returning SVG inside a 100x100 box.
 There are no image files, so nothing to export, optimise, or keep at 2x/3x for
 retina.
 
@@ -257,15 +257,14 @@ no Pillow). PNGs are needed because iPadOS's "Add to Home Screen" reads
   clips the overflow off the top with no way to scroll to it, while auto
   margins collapse to 0 once content doesn't fit and fall back to normal
   top-down scrolling. Don't "simplify" this back to `justify-content: center`.
-- **Sprite names in `art.js` are one flat namespace** (`add(name, fn)` writes
-  into a single `SPRITES` table; a later `add()` with the same name silently
-  overwrites an earlier one). Dress-Up's two newest bodies are named `puff`
-  and `sparkle`, not the more obvious `cloud`/`star` — those names are
-  already taken by the Spot the Difference background prop and the Shapes
-  game's star, both defined earlier in the file, and reusing them would have
-  put a face on every background cloud and on what's supposed to be a plain
-  geometric star. Check `PROPS`/`SHAPES`/`ANIMALS`/`OBJECTS`/`BUDDIES` before
-  naming a new sprite.
+- **Sprite names in `art.js` are one flat namespace** — animals, objects,
+  scene props, geometric shapes and dress-up bodies all share one `SPRITES`
+  table. `add()` now **throws on a duplicate name**, so you find out at the
+  first page load rather than via a subtly wrong picture: a hand-drawn star
+  with a face sat in this file fully dead for months, because the geometric
+  `SHAPE_ART` star registered later under the same name and won. That's also
+  why Dress-Up's bodies are `puff`/`sparkle` and not the more obvious
+  `cloud`/`star` — both were already taken.
 - **The topbar's icon-btn (back button / gear / age pill) shrinks from `--tap`
   (88px) to 64px below `max-height: 500px`** — a phone in landscape has only
   ~350-430px of total height, and a fixed 116px-tall topbar was eating a much

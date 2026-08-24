@@ -100,10 +100,12 @@ function renderHome() {
     el('div', { class: 'earned', html: earned ? `${glyph.star()}<span>${earned}</span>` : '&nbsp;' })));
   });
 
-  const toyGrid = el('div', { class: 'game-grid toy-grid' });
+  // Same .game-grid / .game-card styling as the quiz games above — a toy card
+  // differs only in having no star count, so it needs no modifier class.
+  const toyGrid = el('div', { class: 'game-grid' });
   TOYS.forEach((toy) => {
     toyGrid.append(el('button', {
-      class: 'game-card toy-card',
+      class: 'game-card',
       'aria-label': toy.title,
       onclick: () => { sfx('tap'); playToy(toy); },
     },

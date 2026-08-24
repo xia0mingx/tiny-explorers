@@ -12,5 +12,3 @@ import maze from './maze.js';
 import balance from './balance.js';
 
 export const GAMES = [counting, shapes, shadows, patterns, tracing, maze, differences, balance];
-
-export const gameById = (id) => GAMES.find((g) => g.id === id);

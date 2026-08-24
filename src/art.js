@@ -72,7 +72,24 @@ function starPoly(points, cx, cy, R, r, rot = -Math.PI / 2) {
 /* ── animals ───────────────────────────────────────────────────────────── */
 
 const SPRITES = {};
-const add = (name, fn) => { SPRITES[name] = fn; };
+
+/* Sprite names are ONE FLAT NAMESPACE shared by animals, objects, scene props,
+   geometric shapes and dress-up bodies alike. A duplicate name used to just
+   overwrite the earlier sprite silently — which is how a hand-drawn star with
+   a face sat in this file for months, fully dead, because the geometric
+   SHAPE_ART star registered later under the same name and won.
+
+   Throwing here rather than warning is deliberate: a collision is a static
+   authoring mistake that can only be introduced by editing this file, never
+   by anything a child does, and art.js is imported at boot — so this surfaces
+   immediately and unmissably the first time the app is loaded, instead of as
+   a subtly wrong picture nobody notices. */
+const add = (name, fn) => {
+  if (name in SPRITES) {
+    throw new Error(`art.js: duplicate sprite name "${name}" — names are one flat namespace, pick another`);
+  }
+  SPRITES[name] = fn;
+};
 
 add('cat', (c) => `
   <path d="M20 46 L15 10 L44 27 Z" fill="${shade(c, -18)}"/>
@@ -267,10 +284,11 @@ add('apple', (c) => `
   <ellipse cx="34" cy="44" rx="7" ry="10" fill="#fff" opacity=".38"
            transform="rotate(-24 34 44)"/>`);
 
-add('star', (c) => `
-  <polygon points="${starPoly(5, 50, 52, 44, 18)}" fill="${c}"/>
-  ${eyes(48, 10, 4.2)}
-  ${smile(60, 5)}`);
+/* No 'star' here on purpose — the countable star IS the geometric one from
+   SHAPE_ART below, deliberately kept plain so the Shapes game teaches the
+   form cleanly. A faced version used to be defined at this spot and was
+   silently overwritten by SHAPE_ART's, so it never actually rendered; the
+   add() guard above now makes that class of mistake impossible. */
 
 add('balloon', (c) => `
   <ellipse cx="50" cy="40" rx="28" ry="33" fill="${c}"/>
@@ -595,7 +613,6 @@ export const SHAPE_OUTLINE = {
   car: [pointsToPath('10,74 10,60 26,60 36,38 64,38 74,60 90,60 90,74'),
         circlePath(28, 80, 10), circlePath(72, 80, 10)],
 };
-export const OUTLINE_SHAPE_IDS = Object.keys(SHAPE_OUTLINE);
 
 /** Dot-to-Dot shape pools by age: fewer, simpler single-loop shapes for
  *  younger children, saving the multi-group shapes (which need more dots to
@@ -616,8 +633,11 @@ export const ANIMALS = ['cat', 'bunny', 'bear', 'dog', 'mouse', 'fox', 'frog', '
 export const OBJECTS = ['apple', 'star', 'balloon', 'flower', 'cupcake',
                         'strawberry', 'icecream'];
 
-export const PROPS = ['tree', 'cloud', 'sun', 'house', 'mushroom', 'bush', 'bird',
-                      'rock', 'flower', 'butterfly', 'bee', 'balloon'];
+/* No PROPS list here: Spot the Difference owns its own GROUND_PROPS /
+   SKY_PROPS split (a prop has to know which half of the scene it belongs in,
+   which a single flat list can't express). A general PROPS export used to sit
+   here unused, which was a trap — adding a sprite to it looked like it would
+   show up in the game, and never did. */
 
 /** Nouns spoken by the counting game ("How many ducks?"). */
 export const PLURALS = {
@@ -628,8 +648,6 @@ export const PLURALS = {
   pig: 'pigs', elephant: 'elephants', penguin: 'penguins', lion: 'lions',
   turtle: 'turtles', bee: 'bees', butterfly: 'butterflies',
 };
-
-export const hasSprite = (name) => name in SPRITES;
 
 /** Raw markup for one sprite, without an <svg> wrapper — for composing scenes. */
 export function spriteBody(name, color = PALETTE[0]) {

@@ -178,7 +178,7 @@ export default {
         </svg>`;
 
       const backBtn = el('button', {
-        class: 'big-btn ghost dressup-back-btn', text: 'Back to dress-up',
+        class: 'big-btn ghost', text: 'Back to dress-up',
         onclick: () => { sfx('tap'); screen = 'dress'; render(); },
       });
 

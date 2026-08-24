@@ -18,13 +18,6 @@ export function shuffle(arr) {
 /** `count` distinct members of `arr`, in random order. */
 export const sample = (arr, count) => shuffle(arr).slice(0, count);
 
-/** Like sample(), but guarantees `must` is included (used to place the right
- *  answer among distractors without ever duplicating it). */
-export function sampleWith(arr, count, must) {
-  const rest = sample(arr.filter((x) => x !== must), count - 1);
-  return shuffle([must, ...rest]);
-}
-
 /** Returns a `next()` function that dispenses items from `items` in shuffled
  *  order with no repeats, reshuffling once the deck runs out. Swaps the new
  *  deck's first card away from whatever was just drawn, so a reshuffle can
@@ -62,18 +55,10 @@ export function el(tag, props = {}, ...children) {
   return node;
 }
 
-/** Same as el(), for SVG's namespace. */
-export function svgEl(tag, props = {}, ...children) {
-  const node = document.createElementNS('http://www.w3.org/2000/svg', tag);
-  for (const [k, v] of Object.entries(props)) {
-    if (v == null || v === false) continue;
-    if (k === 'html') node.innerHTML = v;
-    else if (k.startsWith('on')) node.addEventListener(k.slice(2), v);
-    else node.setAttribute(k, v);
-  }
-  for (const c of children.flat()) if (c != null) node.append(c);
-  return node;
-}
+/* No svgEl() counterpart to el(): every game builds its SVG as a markup
+   string and assigns it via innerHTML / el()'s `html` prop, which is far
+   less verbose for the deeply-nested shapes these sprites are. An
+   element-at-a-time SVG builder sat here unused for exactly that reason. */
 
 export const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
