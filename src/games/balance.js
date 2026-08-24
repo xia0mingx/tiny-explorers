@@ -10,11 +10,13 @@
    there's always a single correct pan to tap and no "equal" state to
    design feedback for — a possible follow-up, not a v1 requirement.
 
-   The pans hang from a fixed bar rather than a physically-rotating beam:
-   each pan's own Y offset is driven by (its count − the other's count),
-   capped, so the heavier pan sinks and the lighter one rises. This gives
-   the same "watch it tip" feedback as a rotating beam without needing to
-   re-derive every item's position under rotation.
+   The beam genuinely rotates around a fixed fulcrum — an earlier version
+   kept the beam flat and only moved the pans' hanging height, which read
+   as "two floating baskets" rather than an actual tipping scale. Each
+   pan's rope still hangs straight down (plumb) from its own end of the
+   rotated beam, which is physically correct: gravity keeps a hanging pan
+   vertical regardless of the beam's angle, only its attachment point
+   moves with the beam.
 */
 
 import { el, randInt, range, pick } from '../util.js';
@@ -26,9 +28,11 @@ const COUNTABLE = [...OBJECTS, ...ANIMALS];
  *  can a child subitise/count at a glance", same as Counting's own scale. */
 const MAX_ITEMS = { 2: 3, 3: 4, 4: 6, 5: 8 };
 
-const NEUTRAL_Y = 108;
-const OFFSET_PER_ITEM = 6;
-const MAX_OFFSET = 30;
+const FULCRUM = { x: 150, y: 64 };
+const BEAM_HALF = 86;
+const ROPE_LEN = 46;
+const ANGLE_PER_ITEM = 0.055; // radians
+const MAX_ANGLE = 0.32;       // ~18 degrees
 const PAN_W = 74;
 const PAN_H = 50;
 
@@ -92,22 +96,34 @@ export default {
 
     ctx.prompt('Which side is heavier?');
 
-    const leftOffset = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, (left - right) * OFFSET_PER_ITEM));
-    const rightOffset = -leftOffset;
-    const leftY = NEUTRAL_Y + leftOffset;
-    const rightY = NEUTRAL_Y + rightOffset;
-    const leftX = 92;
-    const rightX = 208;
+    // Positive angle here rotates the LEFT end down: the beam is drawn from
+    // (cos, sin) offsets around the fulcrum, and a heavier left side should
+    // sink, so the sign is tied to (left - right), not (right - left).
+    const angle = Math.max(-MAX_ANGLE, Math.min(MAX_ANGLE, (left - right) * ANGLE_PER_ITEM));
+    const leftEnd = {
+      x: FULCRUM.x - BEAM_HALF * Math.cos(angle),
+      y: FULCRUM.y + BEAM_HALF * Math.sin(angle),
+    };
+    const rightEnd = {
+      x: FULCRUM.x + BEAM_HALF * Math.cos(angle),
+      y: FULCRUM.y - BEAM_HALF * Math.sin(angle),
+    };
+    const leftPan = { x: leftEnd.x, y: leftEnd.y + ROPE_LEN };
+    const rightPan = { x: rightEnd.x, y: rightEnd.y + ROPE_LEN };
 
     const wrap = el('div', { class: 'stage-figure' });
     wrap.innerHTML = `
       <svg viewBox="0 0 300 200" style="width:100%;height:100%" class="balance-svg">
-        <path d="M150 190 L128 190 L150 40 L172 190 Z" fill="#e8e3f2"/>
-        <rect x="58" y="34" width="184" height="10" rx="5" fill="#c9c2da"/>
-        <line x1="${leftX}" y1="44" x2="${leftX}" y2="${leftY - 24}" stroke="#8a869c" stroke-width="3"/>
-        <line x1="${rightX}" y1="44" x2="${rightX}" y2="${rightY - 24}" stroke="#8a869c" stroke-width="3"/>
-        ${panMarkup(leftX, leftY, sprite, left, colors, 'left')}
-        ${panMarkup(rightX, rightY, sprite, right, colors, 'right')}
+        <path d="M150 190 L128 190 L150 ${FULCRUM.y} L172 190 Z" fill="#e8e3f2"/>
+        <circle cx="${FULCRUM.x}" cy="${FULCRUM.y}" r="6" fill="#8a869c"/>
+        <line x1="${leftEnd.x}" y1="${leftEnd.y}" x2="${rightEnd.x}" y2="${rightEnd.y}"
+              stroke="#c9c2da" stroke-width="10" stroke-linecap="round"/>
+        <line x1="${leftEnd.x}" y1="${leftEnd.y}" x2="${leftPan.x}" y2="${leftPan.y}"
+              stroke="#8a869c" stroke-width="3"/>
+        <line x1="${rightEnd.x}" y1="${rightEnd.y}" x2="${rightPan.x}" y2="${rightPan.y}"
+              stroke="#8a869c" stroke-width="3"/>
+        ${panMarkup(leftPan.x, leftPan.y, sprite, left, colors, 'left')}
+        ${panMarkup(rightPan.x, rightPan.y, sprite, right, colors, 'right')}
       </svg>`;
     ctx.stage.append(wrap);
 

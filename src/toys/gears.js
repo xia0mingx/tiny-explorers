@@ -1,21 +1,23 @@
-/* Gear Machine — tap any gear to spin the whole meshed chain. Pure
-   cause-and-effect engineering play: no objective, nothing to get right,
-   just watch how one gear turning makes its neighbours turn the opposite
-   way, faster or slower depending on size — a real mechanical relationship,
-   not a simulated one.
+/* Gear Machine — drag any gear around and the whole meshed chain turns
+   with it. Pure cause-and-effect engineering play: no objective, nothing
+   to get right, just watch how one gear turning makes its neighbours turn
+   the opposite way, faster or slower depending on size — a real
+   mechanical relationship, not a simulated one.
 
-   Deliberately tap-to-spin rather than drag-to-rotate: dragging a gear
-   smoothly around its own centre (tracking an angle, not a position) is a
-   fine-motor skill well beyond a 2-year-old, where a flick/tap that spins
-   something and lets it wind down is a toy they already know from
-   pinwheels and tops. Repeated taps add more spin, capped, so it still
-   rewards enthusiasm without needing precise control.
+   Dragging directly sets rotation in real time (the gear tracks the
+   angle from its own centre to the finger every pointermove, and that
+   angle *is* its rotation — no easing, no physics, so it can never feel
+   like it's ignoring the drag). A quick tap with negligible movement
+   instead gives a fixed spin that winds down on its own, like a flicked
+   pinwheel — the two gestures are told apart by how far the pointer
+   actually moved between down and up, not by time held.
 
    The physics: gears meshed in a chain always turn opposite directions
    (that's what "meshed" means), and a bigger gear turns slower than a
-   smaller one it's driving, in exact proportion to their radii — so
-   boost() computes every OTHER gear's velocity from the tapped gear's,
-   scaled by the radius ratio and sign-flipped once per step away from it,
+   smaller one it's driving, in exact proportion to their radii. Both
+   applyDelta() (while dragging) and boost() (on a tap) derive every
+   OTHER gear's rotation/velocity from the dragged/tapped gear's, scaled
+   by the radius ratio and sign-flipped once per step away from it,
    rather than modelling contact forces between neighbours.
 */
 
@@ -27,6 +29,7 @@ const TOOTH_DEPTH = 8;
 const TAP_BOOST = 0.09;
 const MAX_VELOCITY = 0.22;
 const FRICTION = 0.985;
+const DRAG_THRESHOLD = 6; // degrees of cumulative movement before it counts as a drag, not a tap
 
 /** A chain of 3 meshed gears: positions are derived from radii so adjacent
  *  gears sit exactly (r1 + r2) apart, i.e. actually touching/meshing. */
@@ -60,6 +63,17 @@ function gearPath(r, teeth) {
   return `M${pts.join(' L')} Z`;
 }
 
+const angleTo = (cx, cy, p) => Math.atan2(p.y - cy, p.x - cx) * (180 / Math.PI);
+
+/** Shortest signed difference between two angles in degrees, wrapped to
+ *  (-180, 180] so a drag crossing the -180/180 seam doesn't jump. */
+function angleDelta(from, to) {
+  let d = to - from;
+  while (d > 180) d -= 360;
+  while (d <= -180) d += 360;
+  return d;
+}
+
 export default {
   id: 'gears',
   title: 'Gear Machine',
@@ -83,6 +97,8 @@ export default {
     let colors = [pick(PALETTE), pick(PALETTE), pick(PALETTE)];
     let gears = buildGears(colors);
     let rafId = null;
+    let svg;
+    let drag = null; // { idx, lastAngle, moved }
 
     const wrap = el('div', { class: 'gears-wrap' });
     const shuffle = el('button', {
@@ -97,25 +113,31 @@ export default {
     ctx.stage.append(el('div', { class: 'gears-shell' },
       el('div', { class: 'gears-toolbar' }, shuffle), wrap));
 
-    function render() {
-      wrap.innerHTML = `<svg viewBox="0 0 300 200" class="gears-svg">
-          ${gears.map((g, i) => `
-            <g class="gear" data-i="${i}" transform="translate(${g.cx},${g.cy}) rotate(${g.rotation})">
-              <path d="${gearPath(g.r, g.teeth)}" fill="${g.color}"/>
-              <circle r="${g.r * 0.32}" fill="${shade(g.color, -25)}"/>
-              <circle r="${g.r * 0.1}" fill="${shade(g.color, -45)}"/>
-            </g>`).join('')}
-        </svg>`;
-      svg = wrap.querySelector('.gears-svg');
-      svg.addEventListener('click', onTap);
+    function updateTransforms() {
+      gears.forEach((g, i) => {
+        wrap.querySelector(`.gear[data-i="${i}"]`)?.setAttribute(
+          'transform', `translate(${g.cx},${g.cy}) rotate(${g.rotation})`);
+      });
     }
 
-    let svg;
-
-    function boost(tappedIdx) {
+    /** Apply a rotation step to gear `idx` and propagate it to every other
+     *  gear in the chain, opposite in direction each step away and scaled
+     *  by radius ratio — used live while dragging. */
+    function applyDelta(idx, deltaDeg) {
       gears.forEach((g, j) => {
-        const ratio = gears[tappedIdx].r / g.r;
-        const sign = Math.abs(j - tappedIdx) % 2 === 0 ? 1 : -1;
+        const ratio = gears[idx].r / g.r;
+        const sign = Math.abs(j - idx) % 2 === 0 ? 1 : -1;
+        g.rotation = (g.rotation + deltaDeg * ratio * sign) % 360;
+      });
+      updateTransforms();
+    }
+
+    /** Same propagation rule, but adding to each gear's velocity instead of
+     *  its rotation directly — used for a tap's flick-and-decay spin. */
+    function boost(idx) {
+      gears.forEach((g, j) => {
+        const ratio = gears[idx].r / g.r;
+        const sign = Math.abs(j - idx) % 2 === 0 ? 1 : -1;
         g.velocity = clamp(g.velocity + TAP_BOOST * ratio * sign, -MAX_VELOCITY, MAX_VELOCITY);
       });
     }
@@ -128,23 +150,72 @@ export default {
         if (Math.abs(g.velocity) > 0.002) moving = true;
         else g.velocity = 0;
       });
-      gears.forEach((g, i) => {
-        wrap.querySelector(`.gear[data-i="${i}"]`)?.setAttribute(
-          'transform', `translate(${g.cx},${g.cy}) rotate(${g.rotation})`);
-      });
+      updateTransforms();
       rafId = moving ? requestAnimationFrame(frame) : null;
     }
 
-    function onTap(e) {
+    const toSvgPoint = (e) => {
+      const m = svg.getScreenCTM();
+      if (!m) return { x: 0, y: 0 };
+      const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse());
+      return { x: p.x, y: p.y };
+    };
+
+    function onDown(e) {
       const gearEl = e.target.closest('.gear');
       if (!gearEl) return;
-      boost(Number(gearEl.dataset.i));
-      sfx('tap');
-      if (!rafId) rafId = requestAnimationFrame(frame);
+      const idx = Number(gearEl.dataset.i);
+      const g = gears[idx];
+      g.velocity = 0; // grabbing a gear stops any ongoing coast immediately
+      drag = { idx, lastAngle: angleTo(g.cx, g.cy, toSvgPoint(e)), moved: 0 };
+      try { svg.setPointerCapture(e.pointerId); } catch { /* not fatal */ }
+      e.preventDefault();
+    }
+
+    function onMove(e) {
+      if (!drag) return;
+      const g = gears[drag.idx];
+      const angle = angleTo(g.cx, g.cy, toSvgPoint(e));
+      const delta = angleDelta(drag.lastAngle, angle);
+      drag.lastAngle = angle;
+      drag.moved += Math.abs(delta);
+      applyDelta(drag.idx, delta);
+      e.preventDefault();
+    }
+
+    function onUp() {
+      if (!drag) return;
+      // A near-stationary tap (finger came down and up without really
+      // moving) reads as "spin this", not "I rotated it by ~0 degrees".
+      if (drag.moved < DRAG_THRESHOLD) {
+        boost(drag.idx);
+        sfx('tap');
+        if (!rafId) rafId = requestAnimationFrame(frame);
+      }
+      drag = null;
+    }
+
+    function render() {
+      wrap.innerHTML = `<svg viewBox="0 0 300 200" class="gears-svg">
+          ${gears.map((g, i) => `
+            <g class="gear" data-i="${i}" transform="translate(${g.cx},${g.cy}) rotate(${g.rotation})">
+              <path d="${gearPath(g.r, g.teeth)}" fill="${g.color}"/>
+              <circle r="${g.r * 0.32}" fill="${shade(g.color, -25)}"/>
+              <circle r="${g.r * 0.1}" fill="${shade(g.color, -45)}"/>
+            </g>`).join('')}
+        </svg>`;
+      svg = wrap.querySelector('.gears-svg');
+      svg.addEventListener('pointerdown', onDown);
+      svg.addEventListener('pointermove', onMove);
+      svg.addEventListener('pointerup', onUp);
+      svg.addEventListener('pointercancel', onUp);
     }
 
     ctx.onCleanup(() => {
-      svg?.removeEventListener('click', onTap);
+      svg?.removeEventListener('pointerdown', onDown);
+      svg?.removeEventListener('pointermove', onMove);
+      svg?.removeEventListener('pointerup', onUp);
+      svg?.removeEventListener('pointercancel', onUp);
       if (rafId) cancelAnimationFrame(rafId);
     });
 
