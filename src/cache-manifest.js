@@ -11,8 +11,8 @@
    a shipped change, not two that can drift apart. Bump both together.
 */
 
-export const CACHE_NAME = 'tiny-explorers-v10';
-export const APP_VERSION = '1.6.2';
+export const CACHE_NAME = 'tiny-explorers-v11';
+export const APP_VERSION = '1.6.3';
 
 export const SHELL = [
   './',
