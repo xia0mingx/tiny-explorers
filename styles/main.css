@@ -25,6 +25,11 @@
   --tap: 88px;
   --radius: 28px;
   --lift: 0 6px 0 rgba(64, 61, 82, .13), 0 12px 28px rgba(64, 61, 82, .12);
+  /* .toy-stage's own side padding, pulled out as a variable so a full-bleed
+     element (Drawing's canvas, Drive's map) can cancel it out exactly via
+     a matching negative margin instead of guessing a number that has to be
+     kept in sync by hand. */
+  --stage-pad-x: clamp(14px, 2.4vw, 32px);
 
   /* ui-rounded is the soft rounded system face on iPadOS/macOS — exactly the
      friendly look this needs, with no webfont to download or host. */
@@ -716,7 +721,7 @@ svg { display: block; overflow: visible; }
    These have no rounds, no stars, no correct answer — see toyShell.js. Kept
    together at the end alongside the quiz-game section above. */
 
-.toy-stage { padding: 0 clamp(14px, 2.4vw, 32px) clamp(10px, 1.6vh, 22px); }
+.toy-stage { padding: 0 var(--stage-pad-x) clamp(10px, 1.6vh, 22px); }
 
 /* ── Drawing ───────────────────────────────────────────────────────────── */
 
@@ -787,12 +792,16 @@ svg { display: block; overflow: visible; }
 
 .draw-canvas {
   flex: 1 1 auto;
-  width: 100%;
   min-height: 0;
   border-radius: var(--radius);
   background: #fffdf9;
   box-shadow: var(--lift);
   touch-action: none;
+  /* Full-bleed: cancel out .toy-stage's own side padding so the canvas
+     reaches the screen edges (well, #app's safe-area-inset edges) instead
+     of sitting in a padded column like the toolbar above it does. */
+  width: calc(100% + var(--stage-pad-x) * 2);
+  margin-inline: calc(var(--stage-pad-x) * -1);
 }
 
 /* ── Dress-Up ──────────────────────────────────────────────────────────── */
@@ -1026,5 +1035,8 @@ svg { display: block; overflow: visible; }
   border-radius: var(--radius);
   overflow: hidden;
   box-shadow: var(--lift);
+  /* Full-bleed — see .draw-canvas's comment; same reasoning, same fix. */
+  width: calc(100% + var(--stage-pad-x) * 2);
+  margin-inline: calc(var(--stage-pad-x) * -1);
 }
 .drive-svg { width: 100%; height: 100%; touch-action: none; display: block; }
