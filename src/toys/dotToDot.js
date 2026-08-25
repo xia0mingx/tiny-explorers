@@ -15,7 +15,8 @@
    artwork for this toy.
 
    A shape is one or more separate closed loops ("groups") — most are a
-   single loop, but Mickey's head+ears and the car's body+wheels are each
+   single loop, but the snowman's three stacked balls and the car's
+   body+wheels are each
    three. Dots are numbered continuously across every group, but the trail
    is drawn PER GROUP: nothing ever draws a connecting line from the last dot
    of one loop to the first dot of the next, since that would drag a stray

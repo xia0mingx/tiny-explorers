@@ -88,7 +88,7 @@ wrong, so a session ends whenever the child taps back, not when a round is won.
 | **Drawing** | Finger-paint (Brush mode) or tap to place a coloured sprite (Stamp mode), on a blank canvas. Clear is instant — nothing here is precious. |
 | **Dress-Up** | Pick a friend (5 shapes), a colour, a costume (6 outfits) and a hat (7 accessories) — over 2,000 combinations; a shuffle button randomises all four at once. "Place in a scene" then drops the finished character onto a house, park, space, or beach backdrop to drag around. |
 | **Music Maker** | An 8-step, 5-row sequencer tuned to a pentatonic scale, so every combination a child taps sounds pleasant — there's no wrong note. |
-| **Dot to Dot** | Numbered dots trace out a shape — circles and stars through to a car, Mickey-style ears, or a fish — connecting them in order fills it in with colour, then a new shape starts automatically. |
+| **Dot to Dot** | Numbered dots trace out a shape — circles and stars through to a car, a snowman, or a fish — connecting them in order fills it in with colour, then a new shape starts automatically. |
 | **Drive** | Drag a car or a little toy train around a birds-eye town map of streets and blocks; the vehicle eases toward your finger and the train's carriages trail the engine at a fixed distance along its own path. A Honk button and a colour picker are the only other controls. |
 | **Gear Machine** | Drag any gear in a meshed chain of three and the whole chain turns with your finger — each neighbour spins the opposite way, faster or slower by its size, exactly like a real gear train. A quick tap instead gives it a flick that spins and winds down on its own. A shuffle button just recolours the gears. |
 

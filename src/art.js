@@ -580,7 +580,7 @@ export const OUTFIT_IDS = ['none', 'shirt', 'dress', 'overalls', 'cape', 'astron
    regardless of whether the shape was originally a <path> or a <polygon>.
 
    Each entry is an ARRAY of one or more closed subpaths ("groups"). Most
-   shapes are a single group, but a few (Mickey, the car) are naturally drawn
+   shapes are a single group, but a few (the snowman, the car) are naturally drawn
    as several separate closed loops — a head plus two ears, a body plus two
    wheels. Dot-to-Dot samples and numbers each group separately and never
    draws a connecting line between them, so a two-circle "ear" doesn't get a
@@ -609,7 +609,14 @@ export const SHAPE_OUTLINE = {
        + 'Q65 88 40 85 Q10 80 10 50 Z'],
   tree: [pointsToPath('50,8 72,38 58,38 84,66 60,66 60,94 40,94 40,66 16,66 42,38 28,38')],
   rocket: [pointsToPath('50,6 66,34 66,66 86,92 62,74 62,94 38,94 38,74 14,92 34,66 34,34')],
-  mickey: [circlePath(50, 62, 26), circlePath(26, 28, 16), circlePath(74, 28, 16)],
+  /* A snowman, NOT a round head with two round ears — that silhouette (a
+     plain circle with two oversized circles high and apart on it) is the
+     Mickey Mouse trademark, which Disney holds perpetually and enforces
+     hard, and a children's app is exactly the market where confusion is
+     assumed. Three stacked circles read as unmistakably generic while
+     still being a genuine multi-group outline, which is what this entry is
+     here to provide. */
+  snowman: [circlePath(50, 74, 20), circlePath(50, 46, 15), circlePath(50, 24, 11)],
   car: [pointsToPath('10,74 10,60 26,60 36,38 64,38 74,60 90,60 90,74'),
         circlePath(28, 80, 10), circlePath(72, 80, 10)],
 };
@@ -621,7 +628,7 @@ export const OUTLINE_SHAPES_BY_AGE = {
   2: ['circle', 'square', 'triangle', 'diamond'],
   3: ['circle', 'square', 'triangle', 'diamond', 'star', 'heart', 'moon'],
   4: ['square', 'triangle', 'diamond', 'star', 'heart', 'moon', 'house', 'cat', 'fish', 'tree'],
-  5: ['star', 'heart', 'house', 'cat', 'fish', 'tree', 'rocket', 'mickey', 'car'],
+  5: ['star', 'heart', 'house', 'cat', 'fish', 'tree', 'rocket', 'snowman', 'car'],
 };
 
 /* ── public API ────────────────────────────────────────────────────────── */
