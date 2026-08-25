@@ -63,7 +63,7 @@ star progress actually durable.
 
 | Game | Skill | Age 2 | Age 3 | Age 4 | Age 5 |
 |---|---|---|---|---|---|
-| **Counting** | number sense | count 1-3, 2 choices | 1-5, 3 choices | 1-10, 4 choices | **addition to 10** |
+| **Counting** | number sense | count 1-4, 3 choices | 2-6, 3 choices | 3-12, **scattered + mixed sets** | **add / subtract / count** to 12 |
 | **Shapes** | form recognition | 3 shapes | 5 shapes | 8 shapes, **rotated** | 11 shapes, look-alike distractors |
 | **Shadows** | visual matching | 2 shadows | 3 shadows | 4, with look-alikes | 4, plus **mirrored** decoys |
 | **Patterns** | sequencing | AB, gap at end | AB / AAB | ABC / ABB | AABB, **gap in the middle** |
@@ -75,6 +75,15 @@ star progress actually durable.
 Each session is a handful of rounds (3-6 depending on the game) and ends in a
 celebration, which keeps a sitting to roughly two to four minutes — about the
 attention span being designed for.
+
+Counting scales on three levers rather than just bigger numbers. From age 4 the
+sprites are **scattered** instead of laid out in tidy rows, which removes the
+"read it off as two rows of five" shortcut and forces real one-by-one counting;
+the scene also holds a **second kind of animal** while the question names only
+one, so the round tests classify-then-count (and the total is deliberately
+offered as a wrong answer, since counting everything is the classic mistake).
+Age 5 adds **subtraction** — some of the set is faded and crossed out, and the
+question asks how many are left.
 
 ## Free Play
 
