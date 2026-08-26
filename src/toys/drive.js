@@ -75,26 +75,42 @@ function topTree(cx, cy, r) {
           <circle cx="${cx - r * 0.3}" cy="${cy - r * 0.3}" r="${r * 0.4}" fill="#8ee36b" opacity=".7"/>`;
 }
 
+const MAP_W = 600;
+const MAP_H = 200;
+const BLOCK_W = 300;         // width of one town tile, repeated to fill MAP_W
+
+/* The original town was a single 300x200 tile — a 3:2 viewBox that
+   pillarboxes (blank bars down both sides) on any tablet/phone-landscape
+   container wider than that, which is most of them. Tiling it twice to a
+   600x200 (3:1) viewBox instead makes width the constrained dimension for
+   virtually every real aspect ratio, so the map now reaches the screen
+   edges and any leftover letterboxing lands above/below instead of at the
+   sides — seams the vehicle can drive straight over as it roams the wider
+   canvas. */
 function sceneMarkup() {
   const block = (x, y, w, h, color) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" fill="${color}"/>`;
+
+  const town = (offset) => `
+    ${block(14 + offset, 14, 68, 68, '#ffd7a8')}
+    ${block(138 + offset, 14, 44, 68, '#bfe3c0')}
+    ${topTree(150 + offset, 30, 13)}${topTree(172 + offset, 54, 11)}
+    ${block(238 + offset, 14, 48, 68, '#ffb3c6')}
+    ${block(14 + offset, 138, 68, 48, '#a9cdff')}
+    ${block(138 + offset, 138, 44, 48, '#ffe6a0')}
+    ${block(238 + offset, 138, 48, 48, '#c9b8f2')}
+
+    <rect x="${96 + offset}" y="0" width="28" height="${MAP_H}" fill="#8a869c"/>
+    <rect x="${196 + offset}" y="0" width="28" height="${MAP_H}" fill="#8a869c"/>
+
+    <path d="M${110 + offset} 0 V${MAP_H}" stroke="#fff" stroke-width="3" stroke-dasharray="10 10"/>
+    <path d="M${210 + offset} 0 V${MAP_H}" stroke="#fff" stroke-width="3" stroke-dasharray="10 10"/>`;
+
   return `
-    <rect width="300" height="200" fill="#cdeccb"/>
-
-    ${block(14, 14, 68, 68, '#ffd7a8')}
-    ${block(138, 14, 44, 68, '#bfe3c0')}
-    ${topTree(150, 30, 13)}${topTree(172, 54, 11)}
-    ${block(238, 14, 48, 68, '#ffb3c6')}
-    ${block(14, 138, 68, 48, '#a9cdff')}
-    ${block(138, 138, 44, 48, '#ffe6a0')}
-    ${block(238, 138, 48, 48, '#c9b8f2')}
-
-    <rect x="96" y="0" width="28" height="200" fill="#8a869c"/>
-    <rect x="196" y="0" width="28" height="200" fill="#8a869c"/>
-    <rect x="0" y="96" width="300" height="28" fill="#8a869c"/>
-
-    <path d="M110 0 V200" stroke="#fff" stroke-width="3" stroke-dasharray="10 10"/>
-    <path d="M210 0 V200" stroke="#fff" stroke-width="3" stroke-dasharray="10 10"/>
-    <path d="M0 110 H300" stroke="#fff" stroke-width="3" stroke-dasharray="10 10"/>`;
+    <rect width="${MAP_W}" height="${MAP_H}" fill="#cdeccb"/>
+    <rect x="0" y="96" width="${MAP_W}" height="28" fill="#8a869c"/>
+    <path d="M0 110 H${MAP_W}" stroke="#fff" stroke-width="3" stroke-dasharray="10 10"/>
+    ${town(0)}
+    ${town(BLOCK_W)}`;
 }
 
 export default {
@@ -116,8 +132,8 @@ export default {
   mount(ctx) {
     let mode = 'car';
     let color = pick(PALETTE);
-    const pos = { x: 150, y: 110 };
-    const target = { x: 150, y: 110 };
+    const pos = { x: MAP_W / 2, y: 110 };
+    const target = { x: MAP_W / 2, y: 110 };
     let angle = 0;
     let dragging = false;
     let rafId = null;
@@ -125,7 +141,7 @@ export default {
 
     const toolbar = el('div', { class: 'drive-toolbar' });
     const wrap = el('div', { class: 'drive-wrap' });
-    wrap.innerHTML = `<svg viewBox="0 0 300 200" class="drive-svg">${sceneMarkup()}
+    wrap.innerHTML = `<svg viewBox="0 0 ${MAP_W} ${MAP_H}" class="drive-svg">${sceneMarkup()}
       <g class="drive-rig"></g></svg>`;
     ctx.stage.append(el('div', { class: 'drive-shell' }, toolbar, wrap));
 
