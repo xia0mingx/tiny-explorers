@@ -14,7 +14,7 @@ SVG generated in code.
 ## Quick start (local development)
 
 ```bash
-python -m http.server 8080 --directory toddler_game
+python -m http.server 8080
 ```
 
 Then open `http://localhost:8080`. A server is required (ES modules don't load
@@ -33,11 +33,15 @@ neither. The app will play fine while your laptop is running and serving it,
 and will stop working the moment it isn't.
 
 For an iPad that plays with the laptop off, in the car, on a plane — deploy
-`toddler_game/` as-is to any free static HTTPS host:
+this repo as-is to any free static HTTPS host:
 
 - [GitHub Pages](https://pages.github.com/), [Netlify](https://www.netlify.com/) (drag-and-drop the folder), or [Cloudflare Pages](https://pages.cloudflare.com/)
 - No build step, no config. Every path in the app is relative, so it works
   unchanged from a subpath like `you.github.io/repo/`.
+- This repo deploys to GitHub Pages automatically: `.github/workflows/pages.yml`
+  publishes the repo root on every push to `master` (enable it once under
+  Settings → Pages → Build and deployment → Source → GitHub Actions if it
+  isn't already on).
 
 Then, **once**, on the iPad:
 
