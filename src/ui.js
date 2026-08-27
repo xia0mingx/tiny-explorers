@@ -200,7 +200,14 @@ export function settingsSheet() {
     toggle('Read instructions aloud', 'autoSpeak'),
     resetBtn,
     el('button', { class: 'big-btn', text: 'Done', onclick: () => { sfx('tap'); close(); } }),
-    el('p', { class: 'hint', text: `Version ${APP_VERSION}` })));
+    el('p', { class: 'hint', text: `Version ${APP_VERSION}` }),
+    el('a', {
+      class: 'hint credit-link',
+      href: 'https://github.com/xia0mingx/tiny-explorers',
+      target: '_blank',
+      rel: 'noopener noreferrer',
+      text: 'View on GitHub',
+    })));
 
   document.body.append(overlay);
   return overlay;

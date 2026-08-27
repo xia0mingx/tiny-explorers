@@ -505,6 +505,13 @@ svg { display: block; overflow: visible; }
   color: var(--ink-soft);
   padding-top: 6px;
 }
+/* Version and credit link share .hint's sizing; the link just needs to read
+   as tappable on top of that. */
+a.credit-link {
+  display: block;
+  text-decoration: underline;
+  padding-top: 0;
+}
 
 /* ═══ Per-game layout ══════════════════════════════════════════════════════
    Kept together at the end rather than split into files: the games share the
