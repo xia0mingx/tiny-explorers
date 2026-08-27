@@ -117,6 +117,12 @@ export function celebrate({ starsWon, onAgain, onHome }) {
  * who has been told about it and reliably beyond a toddler who taps everything
  * on screen — enough to keep sound settings and the progress reset out of reach
  * without putting a maths puzzle in front of a 2-year-old's parent.
+ *
+ * The gesture itself is otherwise undiscoverable — nothing about a plain gear
+ * icon suggests "hold, don't tap" — so a one-word hint rides along under it.
+ * Kept tiny and low-contrast on purpose: legible enough for a grown-up who
+ * goes looking, quiet enough that it doesn't read as a button a child should
+ * go tap.
  */
 export function holdButton(svg, onHold, label, ms = 1200) {
   const btn = el('button', { class: 'icon-btn', 'aria-label': label, html: svg });
@@ -136,7 +142,8 @@ export function holdButton(svg, onHold, label, ms = 1200) {
   btn.addEventListener('pointerup', cancel);
   btn.addEventListener('pointerleave', cancel);
   btn.addEventListener('pointercancel', cancel);
-  return btn;
+
+  return el('div', { class: 'hold-btn-wrap' }, btn, el('span', { class: 'hold-hint', text: 'hold' }));
 }
 
 /** Human-readable line for each offlineStatus() outcome. This is the piece

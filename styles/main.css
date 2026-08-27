@@ -92,6 +92,25 @@ svg { display: block; overflow: visible; }
 .icon-btn:active { transform: scale(.92); }
 .icon-btn svg { width: 46%; height: 46%; }
 
+/* holdButton()'s gear + tiny "hold" hint. Column so the hint sits directly
+   under the icon rather than stretching the topbar's row; sized to stay out
+   of a child's notice while still being findable for a grown-up who reads
+   the topbar closely. */
+.hold-btn-wrap {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.hold-hint {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  opacity: .5;
+  letter-spacing: .2px;
+}
+
 .title-block { flex: 1 1 auto; min-width: 0; }
 .title-block h1 {
   font-size: clamp(22px, 3vw, 34px);
