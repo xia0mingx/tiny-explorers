@@ -11,7 +11,7 @@ import { glyph, renderSprite, PALETTE } from './art.js';
 import { holdButton, settingsSheet } from './ui.js';
 import { unlock, sfx, stopSpeech } from './audio.js';
 import { registerServiceWorker } from './offline.js';
-import { getAge, setAge, getStars, totalStars } from './state.js';
+import { getAge, setAge, getStars, totalStars, isGameEnabled } from './state.js';
 import { startGame } from './engine.js';
 import { startToy } from './toyShell.js';
 import { GAMES } from './games/index.js';
@@ -85,10 +85,20 @@ function renderHome() {
     el('div', { class: 'title-block' },
       el('h1', { text: 'Tiny Explorers' }),
       el('p', { text: stars ? `${stars} stars collected` : 'Pick a game to play' })),
-    holdButton(glyph.gear(), () => settingsSheet(), 'Settings for grown-ups'));
+    holdButton(glyph.gear(), () => settingsSheet(renderHome), 'Settings for grown-ups'));
 
+  const activeGames = GAMES.filter((game) => isGameEnabled(game.id));
   const grid = el('div', { class: 'game-grid' });
-  GAMES.forEach((game) => {
+  if (!activeGames.length) {
+    // Every game turned off in the parent settings — rare, but a blank grid
+    // with no explanation would look broken rather than deliberate.
+    grid.append(el('p', {
+      class: 'hint',
+      style: { gridColumn: '1 / -1' },
+      text: 'No games turned on — hold the gear above to enable some.',
+    }));
+  }
+  activeGames.forEach((game) => {
     const earned = getStars(game.id, age);
     grid.append(el('button', {
       class: 'game-card',

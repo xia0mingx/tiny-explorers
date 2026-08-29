@@ -11,6 +11,7 @@ const DEFAULTS = {
   age: null,                 // 2 | 3 | 4 | 5, null until a grown-up picks one
   stars: {},                 // "<gameId>:<age>" -> total stars earned
   settings: { sound: true, autoSpeak: false },
+  disabledGames: {},         // "<gameId>" -> true; absent/false means enabled
 };
 
 let data = load();
@@ -25,6 +26,7 @@ function load() {
       ...parsed,
       settings: { ...DEFAULTS.settings, ...(parsed.settings || {}) },
       stars: parsed.stars || {},
+      disabledGames: parsed.disabledGames || {},
     };
   } catch {
     // Corrupt or unavailable storage (private mode) must not brick the app.
@@ -68,5 +70,16 @@ export const totalStars = (age) =>
 /** Used by the parent settings sheet. */
 export function resetProgress() {
   data.stars = {};
+  save();
+}
+
+/** A game not in the map (the common case — nothing's been turned off, or
+ *  this game didn't exist yet when disabledGames was last saved) is enabled
+ *  by default, so adding a new game to GAMES never silently hides it. */
+export const isGameEnabled = (gameId) => !data.disabledGames[gameId];
+
+export function setGameEnabled(gameId, enabled) {
+  if (enabled) delete data.disabledGames[gameId];
+  else data.disabledGames[gameId] = true;
   save();
 }
