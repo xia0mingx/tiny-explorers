@@ -12,6 +12,7 @@ const DEFAULTS = {
   stars: {},                 // "<gameId>:<age>" -> total stars earned
   settings: { sound: true, autoSpeak: false },
   disabledGames: {},         // "<gameId>" -> true; absent/false means enabled
+  disabledToys: {},          // "<toyId>" -> true; absent/false means enabled
 };
 
 let data = load();
@@ -27,6 +28,7 @@ function load() {
       settings: { ...DEFAULTS.settings, ...(parsed.settings || {}) },
       stars: parsed.stars || {},
       disabledGames: parsed.disabledGames || {},
+      disabledToys: parsed.disabledToys || {},
     };
   } catch {
     // Corrupt or unavailable storage (private mode) must not brick the app.
@@ -81,5 +83,17 @@ export const isGameEnabled = (gameId) => !data.disabledGames[gameId];
 export function setGameEnabled(gameId, enabled) {
   if (enabled) delete data.disabledGames[gameId];
   else data.disabledGames[gameId] = true;
+  save();
+}
+
+/** Same "absent means enabled" rule as isGameEnabled/setGameEnabled, kept as
+ *  a separate map (rather than sharing disabledGames) since a toy and a game
+ *  are shown in separate sections and a future id collision between the two
+ *  lists shouldn't silently cross-toggle the wrong thing. */
+export const isToyEnabled = (toyId) => !data.disabledToys[toyId];
+
+export function setToyEnabled(toyId, enabled) {
+  if (enabled) delete data.disabledToys[toyId];
+  else data.disabledToys[toyId] = true;
   save();
 }

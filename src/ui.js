@@ -4,10 +4,14 @@
 import { el, range, pick } from './util.js';
 import { glyph, renderSprite, ANIMALS, PALETTE } from './art.js';
 import { sfx, stopSpeech } from './audio.js';
-import { getSettings, setSetting, resetProgress, isGameEnabled, setGameEnabled } from './state.js';
+import {
+  getSettings, setSetting, resetProgress,
+  isGameEnabled, setGameEnabled, isToyEnabled, setToyEnabled,
+} from './state.js';
 import { offlineStatus } from './offline.js';
 import { APP_VERSION } from './cache-manifest.js';
 import { GAMES } from './games/index.js';
+import { TOYS } from './toys/index.js';
 
 /** Round icon button. `label` is for screen readers only — nothing here shows text. */
 export function iconButton(svg, onClick, label) {
@@ -196,6 +200,12 @@ export function settingsSheet(onClose) {
     (next) => setGameEnabled(game.id, next),
   );
 
+  const toyToggle = (toy) => switchRow(
+    toy.title,
+    () => isToyEnabled(toy.id),
+    (next) => setToyEnabled(toy.id, next),
+  );
+
   let armed = false;
   const resetBtn = el('button', {
     class: 'big-btn ghost',
@@ -224,6 +234,8 @@ export function settingsSheet(onClose) {
     toggle('Read instructions aloud', 'autoSpeak'),
     el('div', { class: 'section-heading', text: 'Games' }),
     ...GAMES.map(gameToggle),
+    el('div', { class: 'section-heading', text: 'Free Play' }),
+    ...TOYS.map(toyToggle),
     resetBtn,
     el('button', { class: 'big-btn', text: 'Done', onclick: () => { sfx('tap'); close(); } }),
     el('p', { class: 'hint', text: `Version ${APP_VERSION}` }),

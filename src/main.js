@@ -11,7 +11,7 @@ import { glyph, renderSprite, PALETTE } from './art.js';
 import { holdButton, settingsSheet } from './ui.js';
 import { unlock, sfx, stopSpeech } from './audio.js';
 import { registerServiceWorker } from './offline.js';
-import { getAge, setAge, getStars, totalStars, isGameEnabled } from './state.js';
+import { getAge, setAge, getStars, totalStars, isGameEnabled, isToyEnabled } from './state.js';
 import { startGame } from './engine.js';
 import { startToy } from './toyShell.js';
 import { GAMES } from './games/index.js';
@@ -112,8 +112,16 @@ function renderHome() {
 
   // Same .game-grid / .game-card styling as the quiz games above — a toy card
   // differs only in having no star count, so it needs no modifier class.
+  const activeToys = TOYS.filter((toy) => isToyEnabled(toy.id));
   const toyGrid = el('div', { class: 'game-grid' });
-  TOYS.forEach((toy) => {
+  if (!activeToys.length) {
+    toyGrid.append(el('p', {
+      class: 'hint',
+      style: { gridColumn: '1 / -1' },
+      text: 'No toys turned on — hold the gear above to enable some.',
+    }));
+  }
+  activeToys.forEach((toy) => {
     toyGrid.append(el('button', {
       class: 'game-card',
       'aria-label': toy.title,
