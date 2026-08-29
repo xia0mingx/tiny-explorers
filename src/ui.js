@@ -4,9 +4,10 @@
 import { el, range, pick } from './util.js';
 import { glyph, renderSprite, ANIMALS, PALETTE } from './art.js';
 import { sfx, stopSpeech } from './audio.js';
-import { getSettings, setSetting, resetProgress } from './state.js';
+import { getSettings, setSetting, resetProgress, isGameEnabled, setGameEnabled } from './state.js';
 import { offlineStatus } from './offline.js';
 import { APP_VERSION } from './cache-manifest.js';
+import { GAMES } from './games/index.js';
 
 /** Round icon button. `label` is for screen readers only — nothing here shows text. */
 export function iconButton(svg, onClick, label) {
@@ -158,26 +159,42 @@ const OFFLINE_MESSAGE = {
   failed: () => "Couldn't save for offline — try closing and reopening the app",
 };
 
-export function settingsSheet() {
+/** @param {() => void} [onClose] called after the sheet is dismissed, so the
+ *  home screen underneath (whose game grid a "Games" toggle here can change)
+ *  can re-render itself. */
+export function settingsSheet(onClose) {
   const overlay = el('div', { class: 'overlay' });
-  const close = () => overlay.remove();
+  const close = () => { overlay.remove(); onClose?.(); };
 
   const offlineRow = el('p', { class: 'offline-status', text: 'Checking offline status…' });
   offlineStatus().then((s) => { offlineRow.textContent = OFFLINE_MESSAGE[s.state](s); });
 
-  const toggle = (label, key) => {
-    const sw = el('div', { class: `switch ${getSettings()[key] ? 'on' : ''}` });
+  /** A labelled on/off pill button. `getOn`/`setOn` own the actual value —
+   *  shared by the sound/speech toggles below and the per-game ones, which
+   *  read from two different places in state.js. */
+  const switchRow = (label, getOn, setOn) => {
+    const sw = el('div', { class: `switch ${getOn() ? 'on' : ''}` });
     return el('button', {
       class: 'toggle',
       onclick: () => {
-        const next = !getSettings()[key];
-        setSetting(key, next);
+        const next = !getOn();
+        setOn(next);
         sw.classList.toggle('on', next);
-        if (key === 'autoSpeak' && !next) stopSpeech();
         sfx('tap');
       },
     }, el('span', { text: label }), sw);
   };
+
+  const toggle = (label, key) => switchRow(label, () => getSettings()[key], (next) => {
+    setSetting(key, next);
+    if (key === 'autoSpeak' && !next) stopSpeech();
+  });
+
+  const gameToggle = (game) => switchRow(
+    game.title,
+    () => isGameEnabled(game.id),
+    (next) => setGameEnabled(game.id, next),
+  );
 
   let armed = false;
   const resetBtn = el('button', {
@@ -205,6 +222,8 @@ export function settingsSheet() {
     offlineRow,
     toggle('Sound effects', 'sound'),
     toggle('Read instructions aloud', 'autoSpeak'),
+    el('div', { class: 'section-heading', text: 'Games' }),
+    ...GAMES.map(gameToggle),
     resetBtn,
     el('button', { class: 'big-btn', text: 'Done', onclick: () => { sfx('tap'); close(); } }),
     el('p', { class: 'hint', text: `Version ${APP_VERSION}` }),
