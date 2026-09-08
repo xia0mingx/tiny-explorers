@@ -208,8 +208,23 @@ formants, so the further it sits from 1.0 the more "chipmunk" it sounds.
 
 The gear in the top-right needs a **1.2 second press**. That is the entire
 parent gate: trivial for an adult who's been told, and reliably beyond a toddler
-who taps everything. It guards the sound toggles and the progress reset — not
-anything dangerous, since there's nothing dangerous in the app.
+who taps everything. It guards the sound toggles, the progress reset, and the
+per-game switches below — not anything dangerous, since there's nothing
+dangerous in the app.
+
+### Turning individual games off
+
+Settings has a switch for each of the 8 quiz games, letting a grown-up trim
+the home screen down to just the games they want their kid seeing right now —
+useful for steering a child toward a skill they're working on, or away from
+one they've outgrown. Off games are stored in `disabledGames` in localStorage
+(`src/state.js`'s `isGameEnabled`/`setGameEnabled`); a game **not** in that map
+counts as enabled, so a game added later is never silently hidden by an old
+save. The home screen's grid filters to enabled games and re-renders the
+moment the settings sheet closes, so a toggle takes effect immediately. If
+every game gets turned off, the grid shows a short explanation instead of
+going blank. Free Play's toys aren't affected — only the 8 quiz games can be
+toggled.
 
 ## Regenerating the icons
 
