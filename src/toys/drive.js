@@ -65,52 +65,101 @@ function carriage(color) {
     <circle cx="13" cy="12" r="7" fill="#403d52"/>`;
 }
 
-/* A birds-eye town: two vertical streets and one horizontal street cut the
-   canvas into six blocks, each given a flat top-down filler (a rooftop, a
-   park with round tree canopies, a pond) so the map reads as a real place
-   rather than an empty grid. Nothing here is a lane the vehicle is held to
-   — it's a backdrop, exactly like the old park scene was. */
+/* A birds-eye town: two vertical streets and one horizontal street cut each
+   BLOCK_W x BLOCK_H tile into six blocks, given a flat top-down filler (a
+   rooftop, a park with round tree canopies, a pond) so the map reads as a
+   real place rather than an empty grid. Nothing here is a lane the vehicle
+   is held to — it's a backdrop, exactly like the old park scene was.
+
+   The tile repeats in BOTH directions (see bestGrid below), so streets stay
+   continuous across tile seams and the result reads as one bigger town grid
+   rather than a visibly repeated pattern. */
 function topTree(cx, cy, r) {
   return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#5fd6a4"/>
           <circle cx="${cx - r * 0.3}" cy="${cy - r * 0.3}" r="${r * 0.4}" fill="#8ee36b" opacity=".7"/>`;
 }
 
-const MAP_W = 600;
-const MAP_H = 200;
-const BLOCK_W = 300;         // width of one town tile, repeated to fill MAP_W
+const BLOCK_W = 300;
+const BLOCK_H = 200;
+const LANE = 28; // width of a paved street / a track's ballast bed
 
-/* The original town was a single 300x200 tile — a 3:2 viewBox that
-   pillarboxes (blank bars down both sides) on any tablet/phone-landscape
-   container wider than that, which is most of them. Tiling it twice to a
-   600x200 (3:1) viewBox instead makes width the constrained dimension for
-   virtually every real aspect ratio, so the map now reaches the screen
-   edges and any leftover letterboxing lands above/below instead of at the
-   sides — seams the vehicle can drive straight over as it roams the wider
-   canvas. */
-function sceneMarkup() {
+/* A road: grey asphalt with a dashed centre line. A track: a ballast bed
+   with two steel rails and evenly spaced wooden sleepers/ties running
+   across it. Drawn as a straight strip from (x,y) either LANE-wide-by-w-long
+   (horizontal) or w-tall-by-LANE-wide (vertical), so the same pair of
+   functions builds both the one long cross-town street and the short
+   street inside a single tile. */
+function hLane(mode, x, y, w) {
+  if (mode === 'car') {
+    return `<rect x="${x}" y="${y}" width="${w}" height="${LANE}" fill="#8a869c"/>
+      <path d="M${x} ${y + LANE / 2} H${x + w}" stroke="#fff" stroke-width="3" stroke-dasharray="10 10"/>`;
+  }
+  let ties = '';
+  for (let sx = x + 10; sx < x + w; sx += 24) {
+    ties += `<rect x="${sx}" y="${y + 3}" width="14" height="${LANE - 6}" rx="2" fill="#8a6a4a"/>`;
+  }
+  return `<rect x="${x}" y="${y}" width="${w}" height="${LANE}" fill="#cfc6ae"/>${ties}
+    <rect x="${x}" y="${y + 6}" width="${w}" height="4" fill="#5b5770"/>
+    <rect x="${x}" y="${y + LANE - 10}" width="${w}" height="4" fill="#5b5770"/>`;
+}
+
+function vLane(mode, x, y, h) {
+  if (mode === 'car') {
+    return `<rect x="${x}" y="${y}" width="${LANE}" height="${h}" fill="#8a869c"/>
+      <path d="M${x + LANE / 2} ${y} V${y + h}" stroke="#fff" stroke-width="3" stroke-dasharray="10 10"/>`;
+  }
+  let ties = '';
+  for (let sy = y + 10; sy < y + h; sy += 24) {
+    ties += `<rect x="${x + 3}" y="${sy}" width="${LANE - 6}" height="14" rx="2" fill="#8a6a4a"/>`;
+  }
+  return `<rect x="${x}" y="${y}" width="${LANE}" height="${h}" fill="#cfc6ae"/>${ties}
+    <rect x="${x + 6}" y="${y}" width="4" height="${h}" fill="#5b5770"/>
+    <rect x="${x + LANE - 10}" y="${y}" width="4" height="${h}" fill="#5b5770"/>`;
+}
+
+function tileMarkup(mode, ox, oy) {
   const block = (x, y, w, h, color) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" fill="${color}"/>`;
-
-  const town = (offset) => `
-    ${block(14 + offset, 14, 68, 68, '#ffd7a8')}
-    ${block(138 + offset, 14, 44, 68, '#bfe3c0')}
-    ${topTree(150 + offset, 30, 13)}${topTree(172 + offset, 54, 11)}
-    ${block(238 + offset, 14, 48, 68, '#ffb3c6')}
-    ${block(14 + offset, 138, 68, 48, '#a9cdff')}
-    ${block(138 + offset, 138, 44, 48, '#ffe6a0')}
-    ${block(238 + offset, 138, 48, 48, '#c9b8f2')}
-
-    <rect x="${96 + offset}" y="0" width="28" height="${MAP_H}" fill="#8a869c"/>
-    <rect x="${196 + offset}" y="0" width="28" height="${MAP_H}" fill="#8a869c"/>
-
-    <path d="M${110 + offset} 0 V${MAP_H}" stroke="#fff" stroke-width="3" stroke-dasharray="10 10"/>
-    <path d="M${210 + offset} 0 V${MAP_H}" stroke="#fff" stroke-width="3" stroke-dasharray="10 10"/>`;
-
   return `
-    <rect width="${MAP_W}" height="${MAP_H}" fill="#cdeccb"/>
-    <rect x="0" y="96" width="${MAP_W}" height="28" fill="#8a869c"/>
-    <path d="M0 110 H${MAP_W}" stroke="#fff" stroke-width="3" stroke-dasharray="10 10"/>
-    ${town(0)}
-    ${town(BLOCK_W)}`;
+    ${block(14 + ox, 14 + oy, 68, 68, '#ffd7a8')}
+    ${block(138 + ox, 14 + oy, 44, 68, '#bfe3c0')}
+    ${topTree(150 + ox, 30 + oy, 13)}${topTree(172 + ox, 54 + oy, 11)}
+    ${block(238 + ox, 14 + oy, 48, 68, '#ffb3c6')}
+    ${block(14 + ox, 138 + oy, 68, 48, '#a9cdff')}
+    ${block(138 + ox, 138 + oy, 44, 48, '#ffe6a0')}
+    ${block(238 + ox, 138 + oy, 48, 48, '#c9b8f2')}
+    ${vLane(mode, 96 + ox, oy, BLOCK_H)}
+    ${vLane(mode, 196 + ox, oy, BLOCK_H)}
+    ${hLane(mode, ox, 96 + oy, BLOCK_W)}`;
+}
+
+function sceneMarkup(mode, cols, rows) {
+  let tiles = '';
+  for (let r = 0; r < rows; r += 1) {
+    for (let c = 0; c < cols; c += 1) tiles += tileMarkup(mode, c * BLOCK_W, r * BLOCK_H);
+  }
+  return `<rect width="${cols * BLOCK_W}" height="${rows * BLOCK_H}" fill="#cdeccb"/>${tiles}`;
+}
+
+/* Picks how many BLOCK_W x BLOCK_H tiles to lay out side by side and stacked,
+   so the generated map's own aspect ratio comes as close as possible to the
+   container's — the fix for a map that used to be a fixed 3:1 strip and so
+   only ever filled the width, leaving a shrinking-to-huge blank margin above
+   and below on anything taller than very wide (most of all in portrait,
+   where the container is taller than it is wide). Trying every small
+   cols/rows pair and scoring by log-ratio (so a 2:1 mismatch in either
+   direction counts the same) naturally reduces to the old "tile twice
+   horizontally" behaviour on wide screens and grows rows instead of margin
+   on tall ones — no separate portrait/landscape branch needed. */
+function bestGrid(aspect) {
+  let best = { cols: 1, rows: 1, score: Infinity };
+  for (let cols = 1; cols <= 4; cols += 1) {
+    for (let rows = 1; rows <= 4; rows += 1) {
+      const contentAspect = (cols * BLOCK_W) / (rows * BLOCK_H);
+      const score = Math.abs(Math.log(contentAspect / aspect));
+      if (score < best.score) best = { cols, rows, score };
+    }
+  }
+  return best;
 }
 
 export default {
@@ -132,8 +181,10 @@ export default {
   mount(ctx) {
     let mode = 'car';
     let color = pick(PALETTE);
-    const pos = { x: MAP_W / 2, y: 110 };
-    const target = { x: MAP_W / 2, y: 110 };
+    let cols = 2;
+    let rows = 1;
+    const pos = { x: (cols * BLOCK_W) / 2, y: (rows * BLOCK_H) / 2 };
+    const target = { ...pos };
     let angle = 0;
     let dragging = false;
     let rafId = null;
@@ -141,11 +192,13 @@ export default {
 
     const toolbar = el('div', { class: 'drive-toolbar' });
     const wrap = el('div', { class: 'drive-wrap' });
-    wrap.innerHTML = `<svg viewBox="0 0 ${MAP_W} ${MAP_H}" class="drive-svg">${sceneMarkup()}
+    wrap.innerHTML = `<svg viewBox="0 0 ${cols * BLOCK_W} ${rows * BLOCK_H}" class="drive-svg">
+      <g class="drive-scene"></g>
       <g class="drive-rig"></g></svg>`;
     ctx.stage.append(el('div', { class: 'drive-shell' }, toolbar, wrap));
 
     const svg = wrap.querySelector('.drive-svg');
+    const scene = wrap.querySelector('.drive-scene');
     const rig = wrap.querySelector('.drive-rig');
 
     // Walks backward through the trail accumulating real distance travelled,
@@ -180,6 +233,43 @@ export default {
       rig.innerHTML = html;
       applyTransforms();
     }
+
+    function renderScene() {
+      scene.innerHTML = sceneMarkup(mode, cols, rows);
+    }
+
+    // Re-measures the wrap's actual box (not the viewport — the toolbar and
+    // stage padding both eat into it) and re-solves the grid for it. Fires
+    // once on mount via ResizeObserver's guaranteed initial callback (same
+    // reasoning as drawing.js's canvas resize — a manual call right after
+    // mount can run before layout settles) and again on any rotation/resize.
+    // Bails out when the grid hasn't actually changed so a slow window drag
+    // (many callbacks, same cols/rows) doesn't re-parse the scene markup on
+    // every intermediate frame.
+    let sceneReady = false;
+    function layoutMap() {
+      const rect = wrap.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const grid = bestGrid(rect.width / rect.height);
+      const changed = grid.cols !== cols || grid.rows !== rows;
+      if (!changed && sceneReady) return;
+      cols = grid.cols;
+      rows = grid.rows;
+      svg.setAttribute('viewBox', `0 0 ${cols * BLOCK_W} ${rows * BLOCK_H}`);
+      renderScene();
+      sceneReady = true;
+      // The tile count just changed size/shape (e.g. a device rotation) —
+      // recentre the vehicle and drop the carriage trail rather than leaving
+      // it pointing at coordinates from the old grid, which would otherwise
+      // render the train's carriages disconnected from the engine.
+      pos.x = target.x = (cols * BLOCK_W) / 2;
+      pos.y = target.y = (rows * BLOCK_H) / 2;
+      history.length = 0;
+      applyTransforms();
+    }
+
+    const ro = new ResizeObserver(layoutMap);
+    ro.observe(wrap);
 
     function frame() {
       const dx = target.x - pos.x;
@@ -240,6 +330,7 @@ export default {
       svg.removeEventListener('pointerup', onUp);
       svg.removeEventListener('pointercancel', onUp);
       if (rafId) cancelAnimationFrame(rafId);
+      ro.disconnect();
     });
 
     // One wrapping row rather than mode buttons + swatches on separate lines
@@ -251,11 +342,11 @@ export default {
       const row = el('div', { class: 'drive-row' },
         el('button', {
           class: `drive-mode ${mode === 'car' ? 'active' : ''}`, text: 'Car',
-          onclick: () => { mode = 'car'; sfx('tap'); renderToolbar(); rebuildRig(); },
+          onclick: () => { mode = 'car'; sfx('tap'); renderToolbar(); renderScene(); rebuildRig(); },
         }),
         el('button', {
           class: `drive-mode ${mode === 'train' ? 'active' : ''}`, text: 'Train',
-          onclick: () => { mode = 'train'; sfx('tap'); renderToolbar(); rebuildRig(); },
+          onclick: () => { mode = 'train'; sfx('tap'); renderToolbar(); renderScene(); rebuildRig(); },
         }),
         el('button', {
           class: 'drive-horn', text: 'Honk!',
@@ -274,6 +365,8 @@ export default {
     }
 
     renderToolbar();
+    renderScene();
+    sceneReady = true;
     rebuildRig();
   },
 };
