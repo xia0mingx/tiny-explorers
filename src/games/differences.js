@@ -7,7 +7,7 @@
 
    Age progression — the mutation KIND is the difficulty, not just the count:
      2  1 difference,  something is missing        (easiest to see)
-     3  2 differences, missing or recoloured
+     3  2 differences, missing, recoloured, or a happy/sad face swap
      4  3 differences, + resized
      5  4 differences, + mirrored                  (hardest: shape and colour
                                                     both match, only facing differs)
@@ -17,13 +17,17 @@
 */
 
 import { el, pick, shuffle, sample, range } from '../util.js';
-import { spriteBody, PALETTE } from '../art.js';
+import { spriteBody, PALETTE, EXPRESSIVE } from '../art.js';
 
+/* 'expression' sits right after 'recolor' rather than at the end: like
+   recolor, it's an obvious at-a-glance difference (a whole face flips from
+   happy to sad), not a subtle one, so it belongs with the easy kinds rather
+   than beside 'flip' — the one kind designed to be the hardest to spot. */
 const CONFIG = {
   2: { items: 5, diffs: 1, kinds: ['remove'] },
-  3: { items: 6, diffs: 2, kinds: ['remove', 'recolor'] },
-  4: { items: 8, diffs: 3, kinds: ['remove', 'recolor', 'resize'] },
-  5: { items: 9, diffs: 4, kinds: ['remove', 'recolor', 'resize', 'flip'] },
+  3: { items: 6, diffs: 2, kinds: ['remove', 'recolor', 'expression'] },
+  4: { items: 8, diffs: 3, kinds: ['remove', 'recolor', 'expression', 'resize'] },
+  5: { items: 9, diffs: 4, kinds: ['remove', 'recolor', 'expression', 'resize', 'flip'] },
 };
 
 /* Scene is a 200x150 viewBox. Sky slots sit above the horizon at y=100. */
@@ -39,29 +43,44 @@ const SLOTS = [
   { x: 158, y: 4,  s: 36, sky: true },
 ];
 
-const GROUND_PROPS = ['tree', 'house', 'mushroom', 'bush', 'rock', 'flower'];
+const GROUND_PROPS = ['tree', 'house', 'mushroom', 'bush', 'rock', 'flower', 'bus', 'train'];
 const SKY_PROPS = ['cloud', 'sun', 'bird', 'balloon', 'butterfly', 'bee'];
 
 /** Props whose silhouette actually changes when mirrored. Flipping a symmetric
  *  house would produce two identical pictures and an unwinnable round. */
 const FLIPPABLE = ['bird', 'bee', 'rock', 'cloud', 'mushroom'];
 
+/* A distant skyline plus a road with a crosswalk along the bottom, instead of
+   plain grass — dresses the scene up like a little town (bus stop included,
+   since a bus/train can now show up as a prop) without adding anything a
+   child has to search for a difference in; it's static on both panels. */
 const BACKDROP = `
   <rect width="200" height="150" fill="#c7e9ff"/>
+  <rect x="4"   y="18" width="14" height="30" rx="2" fill="#b9d8f5" opacity=".6"/>
+  <rect x="22"  y="10" width="16" height="38" rx="2" fill="#a7cdf0" opacity=".6"/>
+  <rect x="162" y="14" width="14" height="34" rx="2" fill="#b9d8f5" opacity=".6"/>
+  <rect x="180" y="8"  width="16" height="40" rx="2" fill="#a7cdf0" opacity=".6"/>
   <path d="M0 96 Q50 84 100 96 T200 94 V150 H0 Z" fill="#a5e06b"/>
-  <path d="M0 118 Q60 110 120 120 T200 116 V150 H0 Z" fill="#93d45c"/>`;
+  <path d="M0 118 Q60 110 120 120 T200 116 V150 H0 Z" fill="#93d45c"/>
+  <rect x="0" y="132" width="200" height="18" fill="#8a869c"/>
+  <path d="M0 141 H200" stroke="#fff" stroke-width="2.4" stroke-dasharray="8 8"/>
+  <rect x="70"  y="132" width="10" height="18" fill="#e8a33c"/>
+  <rect x="90"  y="132" width="10" height="18" fill="#f4f4f4"/>
+  <rect x="110" y="132" width="10" height="18" fill="#e8a33c"/>
+  <rect x="130" y="132" width="10" height="18" fill="#f4f4f4"/>`;
 
 function itemMarkup(item, idx) {
   if (!item) return '';
-  const { slot, sprite, color, scale, flip } = item;
+  const { slot, sprite, color, scale, flip, mood } = item;
   const s = slot.s * scale;
   // Centre the (possibly resized) sprite on the slot so a resize reads as
   // "bigger", not "moved".
   const x = slot.x + (slot.s - s) / 2;
   const y = slot.y + (slot.s - s) / 2;
+  const drawnSprite = mood === 'sad' && EXPRESSIVE[sprite] ? EXPRESSIVE[sprite] : sprite;
   const inner = flip
-    ? `<g transform="translate(100,0) scale(-1,1)">${spriteBody(sprite, color)}</g>`
-    : spriteBody(sprite, color);
+    ? `<g transform="translate(100,0) scale(-1,1)">${spriteBody(drawnSprite, color)}</g>`
+    : spriteBody(drawnSprite, color);
 
   return `<g data-idx="${idx}" style="cursor:pointer">
             <rect x="${slot.x - 2}" y="${slot.y - 2}" width="${slot.s + 4}"
@@ -112,7 +131,11 @@ export default {
       const item = right[idx];
 
       // Only offer kinds that actually produce a visible change for this sprite.
-      const usable = cfg.kinds.filter((k) => k !== 'flip' || FLIPPABLE.includes(item.sprite));
+      const usable = cfg.kinds.filter((k) => {
+        if (k === 'flip') return FLIPPABLE.includes(item.sprite);
+        if (k === 'expression') return Boolean(EXPRESSIVE[item.sprite]);
+        return true;
+      });
       const kind = pick(usable);
 
       if (kind === 'remove') right[idx] = null;
@@ -121,6 +144,7 @@ export default {
         item.color = pick(PALETTE.filter((c) => c !== items[idx].color));
       } else if (kind === 'resize') item.scale = pick([0.6, 1.5]);
       else if (kind === 'flip') item.flip = true;
+      else if (kind === 'expression') item.mood = 'sad';
 
       changed.push(idx);
     }

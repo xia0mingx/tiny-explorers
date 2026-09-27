@@ -46,6 +46,20 @@ const smile = (cy, w = 7, cx = 50) => `
   <path d="M${cx - w} ${cy} Q${cx} ${cy + w * 0.95} ${cx + w} ${cy}"
         stroke="${EYE}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
 
+/* Mouth/brow pair for the 'expression' Spot-the-Difference mutation — the
+   curve bulges UP instead of down, and the brows above it slant inward, so
+   a sad face reads as unmistakably different from its happy twin at a
+   glance rather than needing a close look. */
+const frown = (cy, w = 7, cx = 50) => `
+  <path d="M${cx - w} ${cy + w * 0.7} Q${cx} ${cy - w * 0.6} ${cx + w} ${cy + w * 0.7}"
+        stroke="${EYE}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+
+const sadBrows = (cy, spread = 12, cx = 50) => `
+  <path d="M${cx - spread - 6} ${cy - 8} L${cx - spread + 6} ${cy - 3}"
+        stroke="${EYE}" stroke-width="3" stroke-linecap="round"/>
+  <path d="M${cx + spread + 6} ${cy - 8} L${cx + spread - 6} ${cy - 3}"
+        stroke="${EYE}" stroke-width="3" stroke-linecap="round"/>`;
+
 const blush = (cy, spread = 25, r = 5.4, cx = 50) => `
   <circle cx="${cx - spread}" cy="${cy}" r="${r}" fill="${BLUSH}" opacity=".5"/>
   <circle cx="${cx + spread}" cy="${cy}" r="${r}" fill="${BLUSH}" opacity=".5"/>`;
@@ -356,6 +370,13 @@ add('sun', (c) => `
   ${eyes(46, 10, 4)}
   ${smile(58, 6)}`);
 
+add('sunSad', (c) => `
+  <polygon points="${starPoly(12, 50, 50, 46, 30)}" fill="${shade(c, 24)}"/>
+  <circle cx="50" cy="50" r="27" fill="${c}"/>
+  ${eyes(46, 10, 4)}
+  ${sadBrows(46, 10)}
+  ${frown(58, 6)}`);
+
 add('house', (c) => `
   <rect x="22" y="46" width="56" height="46" rx="5" fill="${c}"/>
   <path d="M14 48 L50 16 L86 48 Z" fill="${shade(c, -40)}"/>
@@ -390,6 +411,60 @@ add('bird', (c) => `
 add('rock', (c) => `
   <path d="M12 84 Q8 58 30 46 Q52 32 72 48 Q94 62 88 84 Z" fill="${c}"/>
   <path d="M30 46 Q44 60 34 84" stroke="${shade(c, -28)}" stroke-width="3" fill="none"/>`);
+
+add('bus', (c) => `
+  <rect x="14" y="30" width="72" height="46" rx="14" fill="${c}"/>
+  <rect x="22" y="14" width="56" height="24" rx="10" fill="${c}"/>
+  <rect x="26" y="20" width="20" height="14" rx="4" fill="#cdeeff"/>
+  <rect x="54" y="20" width="20" height="14" rx="4" fill="#cdeeff"/>
+  ${eyes(52, 15, 5)}
+  ${smile(64, 7)}
+  <rect x="10" y="60" width="10" height="10" rx="3" fill="${shade(c, -30)}"/>
+  <rect x="80" y="60" width="10" height="10" rx="3" fill="${shade(c, -30)}"/>
+  <circle cx="30" cy="82" r="10" fill="#403d52"/>
+  <circle cx="70" cy="82" r="10" fill="#403d52"/>
+  <circle cx="30" cy="82" r="4" fill="#8a869c"/>
+  <circle cx="70" cy="82" r="4" fill="#8a869c"/>`);
+
+/* Sad twin used only by the 'expression' mutation kind, never picked as a
+   scene's starting sprite — see EXPRESSIVE below. */
+add('busSad', (c) => `
+  <rect x="14" y="30" width="72" height="46" rx="14" fill="${c}"/>
+  <rect x="22" y="14" width="56" height="24" rx="10" fill="${c}"/>
+  <rect x="26" y="20" width="20" height="14" rx="4" fill="#cdeeff"/>
+  <rect x="54" y="20" width="20" height="14" rx="4" fill="#cdeeff"/>
+  ${eyes(52, 15, 5)}
+  ${sadBrows(52, 15)}
+  ${frown(64, 7)}
+  <rect x="10" y="60" width="10" height="10" rx="3" fill="${shade(c, -30)}"/>
+  <rect x="80" y="60" width="10" height="10" rx="3" fill="${shade(c, -30)}"/>
+  <circle cx="30" cy="82" r="10" fill="#403d52"/>
+  <circle cx="70" cy="82" r="10" fill="#403d52"/>
+  <circle cx="30" cy="82" r="4" fill="#8a869c"/>
+  <circle cx="70" cy="82" r="4" fill="#8a869c"/>`);
+
+add('train', (c) => `
+  <rect x="18" y="34" width="64" height="42" rx="10" fill="${c}"/>
+  <rect x="34" y="14" width="32" height="24" rx="8" fill="${c}"/>
+  <rect x="40" y="4" width="10" height="14" rx="3" fill="#726e8a"/>
+  <rect x="26" y="44" width="20" height="14" rx="4" fill="#cdeeff"/>
+  ${eyes(58, 15, 5)}
+  ${smile(70, 7)}
+  <circle cx="32" cy="86" r="9" fill="#403d52"/>
+  <circle cx="50" cy="86" r="9" fill="#403d52"/>
+  <circle cx="68" cy="86" r="9" fill="#403d52"/>`);
+
+add('trainSad', (c) => `
+  <rect x="18" y="34" width="64" height="42" rx="10" fill="${c}"/>
+  <rect x="34" y="14" width="32" height="24" rx="8" fill="${c}"/>
+  <rect x="40" y="4" width="10" height="14" rx="3" fill="#726e8a"/>
+  <rect x="26" y="44" width="20" height="14" rx="4" fill="#cdeeff"/>
+  ${eyes(58, 15, 5)}
+  ${sadBrows(58, 15)}
+  ${frown(70, 7)}
+  <circle cx="32" cy="86" r="9" fill="#403d52"/>
+  <circle cx="50" cy="86" r="9" fill="#403d52"/>
+  <circle cx="68" cy="86" r="9" fill="#403d52"/>`);
 
 /* ── geometric shapes ──────────────────────────────────────────────────── */
 
@@ -645,6 +720,12 @@ export const OBJECTS = ['apple', 'star', 'balloon', 'flower', 'cupcake',
    which a single flat list can't express). A general PROPS export used to sit
    here unused, which was a trap — adding a sprite to it looked like it would
    show up in the game, and never did. */
+
+/** Props with a happy/sad sprite pair, for Spot the Difference's 'expression'
+ *  mutation kind — keyed by the happy name a scene is generated with, valued
+ *  by the sad twin to swap in on the mutated copy. Never picked as a starting
+ *  sprite themselves, so they don't need a GROUND_PROPS/SKY_PROPS entry. */
+export const EXPRESSIVE = { sun: 'sunSad', bus: 'busSad', train: 'trainSad' };
 
 /** Nouns spoken by the counting game ("How many ducks?"). */
 export const PLURALS = {
