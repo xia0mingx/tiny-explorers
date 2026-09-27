@@ -28,7 +28,9 @@ import { sfx } from '../audio.js';
 const EASE = 0.14;
 const HISTORY_MAX = 400;
 const MIN_STEP = 2.5;       // only record a new trail point once moved at least this far
-const CARRIAGE_SPACING = 36; // arc-length gap behind the engine per carriage
+const CARRIAGE_SPACING = 62; // arc-length gap behind the engine per carriage — bigger than a
+                              // carriage's own on-screen width (VEHICLE_SCALE included) so
+                              // each one is fully visible instead of stacked behind the last
 const STOP_THRESHOLD = 0.5;
 const VEHICLE_SCALE = 1.4;  // engine/carriages drawn at this scale so they read clearly on the wide map
 
@@ -47,13 +49,20 @@ function carBody(color) {
 function trainEngine(color) {
   return `
     <ellipse cx="0" cy="18" rx="30" ry="6" fill="#00000022"/>
-    <rect x="-26" y="-20" width="52" height="34" rx="8" fill="${color}"/>
-    <rect x="4" y="-34" width="18" height="16" rx="3" fill="${color}"/>
-    <rect x="9" y="-48" width="8" height="15" rx="2" fill="#726e8a"/>
+    <path d="M18 12 L30 22 L14 22 Z" fill="${shade(color, -25)}"/>
+    <rect x="-26" y="-20" width="52" height="34" rx="10" fill="${color}"/>
+    <rect x="4" y="-34" width="18" height="16" rx="4" fill="${color}"/>
+    <path d="M8 -34 L11 -49 L19 -49 L22 -34 Z" fill="${shade(color, -25)}"/>
+    <ellipse cx="15" cy="-49" rx="6" ry="2.2" fill="${shade(color, -45)}"/>
     <rect x="-20" y="-9" width="17" height="13" rx="3" fill="#cdeeff" opacity=".9"/>
+    <circle cx="26" cy="-4" r="3.6" fill="#ffd449"/>
+    <rect x="-22" y="11" width="40" height="5" rx="2.5" fill="${shade(color, -45)}"/>
     <circle cx="-15" cy="14" r="8" fill="#403d52"/>
     <circle cx="4" cy="14" r="8" fill="#403d52"/>
-    <circle cx="18" cy="14" r="8" fill="#403d52"/>`;
+    <circle cx="18" cy="14" r="8" fill="#403d52"/>
+    <circle cx="-15" cy="14" r="3" fill="#8a869c"/>
+    <circle cx="4" cy="14" r="3" fill="#8a869c"/>
+    <circle cx="18" cy="14" r="3" fill="#8a869c"/>`;
 }
 
 function carriage(color) {
