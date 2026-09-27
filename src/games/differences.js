@@ -50,16 +50,13 @@ const SKY_PROPS = ['cloud', 'sun', 'bird', 'balloon', 'butterfly', 'bee'];
  *  house would produce two identical pictures and an unwinnable round. */
 const FLIPPABLE = ['bird', 'bee', 'rock', 'cloud', 'mushroom'];
 
-/* A distant skyline plus a road with a crosswalk along the bottom, instead of
-   plain grass — dresses the scene up like a little town (bus stop included,
-   since a bus/train can now show up as a prop) without adding anything a
-   child has to search for a difference in; it's static on both panels. */
+/* A road with a crosswalk along the bottom, instead of plain grass — dresses
+   the scene up like a little town without adding anything a child has to
+   search for a difference in; it's static on both panels. (An earlier version
+   also drew a translucent skyline up in the sky slots — dropped, since it
+   just read as stray bars behind the balloons/birds rather than buildings.) */
 const BACKDROP = `
   <rect width="200" height="150" fill="#c7e9ff"/>
-  <rect x="4"   y="18" width="14" height="30" rx="2" fill="#b9d8f5" opacity=".6"/>
-  <rect x="22"  y="10" width="16" height="38" rx="2" fill="#a7cdf0" opacity=".6"/>
-  <rect x="162" y="14" width="14" height="34" rx="2" fill="#b9d8f5" opacity=".6"/>
-  <rect x="180" y="8"  width="16" height="40" rx="2" fill="#a7cdf0" opacity=".6"/>
   <path d="M0 96 Q50 84 100 96 T200 94 V150 H0 Z" fill="#a5e06b"/>
   <path d="M0 118 Q60 110 120 120 T200 116 V150 H0 Z" fill="#93d45c"/>
   <rect x="0" y="132" width="200" height="18" fill="#8a869c"/>

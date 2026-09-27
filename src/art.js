@@ -443,28 +443,43 @@ add('busSad', (c) => `
   <circle cx="30" cy="82" r="4" fill="#8a869c"/>
   <circle cx="70" cy="82" r="4" fill="#8a869c"/>`);
 
+/* A boiler + cab + flared funnel + cowcatcher + three wheels on a
+   connecting rod — the classic front-facing steam engine silhouette, so it
+   reads as "train" at a glance instead of a generic boxy robot. */
 add('train', (c) => `
-  <rect x="18" y="34" width="64" height="42" rx="10" fill="${c}"/>
-  <rect x="34" y="14" width="32" height="24" rx="8" fill="${c}"/>
-  <rect x="40" y="4" width="10" height="14" rx="3" fill="#726e8a"/>
-  <rect x="26" y="44" width="20" height="14" rx="4" fill="#cdeeff"/>
-  ${eyes(58, 15, 5)}
-  ${smile(70, 7)}
-  <circle cx="32" cy="86" r="9" fill="#403d52"/>
-  <circle cx="50" cy="86" r="9" fill="#403d52"/>
-  <circle cx="68" cy="86" r="9" fill="#403d52"/>`);
+  <path d="M20 90 L36 70 L64 70 L80 90 Z" fill="${shade(c, -22)}"/>
+  <rect x="20" y="36" width="60" height="38" rx="16" fill="${c}"/>
+  <rect x="32" y="18" width="36" height="22" rx="6" fill="${c}"/>
+  <rect x="38" y="24" width="24" height="12" rx="4" fill="#cdeeff"/>
+  <path d="M42 18 L46 3 L54 3 L58 18 Z" fill="${shade(c, -25)}"/>
+  <ellipse cx="50" cy="3" rx="8" ry="2.6" fill="${shade(c, -45)}"/>
+  ${eyes(56, 14, 5)}
+  ${smile(68, 7)}
+  <rect x="22" y="83" width="56" height="6" rx="3" fill="${shade(c, -45)}"/>
+  <circle cx="30" cy="86" r="10" fill="#403d52"/>
+  <circle cx="50" cy="86" r="10" fill="#403d52"/>
+  <circle cx="70" cy="86" r="10" fill="#403d52"/>
+  <circle cx="30" cy="86" r="4" fill="#8a869c"/>
+  <circle cx="50" cy="86" r="4" fill="#8a869c"/>
+  <circle cx="70" cy="86" r="4" fill="#8a869c"/>`);
 
 add('trainSad', (c) => `
-  <rect x="18" y="34" width="64" height="42" rx="10" fill="${c}"/>
-  <rect x="34" y="14" width="32" height="24" rx="8" fill="${c}"/>
-  <rect x="40" y="4" width="10" height="14" rx="3" fill="#726e8a"/>
-  <rect x="26" y="44" width="20" height="14" rx="4" fill="#cdeeff"/>
-  ${eyes(58, 15, 5)}
-  ${sadBrows(58, 15)}
-  ${frown(70, 7)}
-  <circle cx="32" cy="86" r="9" fill="#403d52"/>
-  <circle cx="50" cy="86" r="9" fill="#403d52"/>
-  <circle cx="68" cy="86" r="9" fill="#403d52"/>`);
+  <path d="M20 90 L36 70 L64 70 L80 90 Z" fill="${shade(c, -22)}"/>
+  <rect x="20" y="36" width="60" height="38" rx="16" fill="${c}"/>
+  <rect x="32" y="18" width="36" height="22" rx="6" fill="${c}"/>
+  <rect x="38" y="24" width="24" height="12" rx="4" fill="#cdeeff"/>
+  <path d="M42 18 L46 3 L54 3 L58 18 Z" fill="${shade(c, -25)}"/>
+  <ellipse cx="50" cy="3" rx="8" ry="2.6" fill="${shade(c, -45)}"/>
+  ${eyes(56, 14, 5)}
+  ${sadBrows(56, 14)}
+  ${frown(68, 7)}
+  <rect x="22" y="83" width="56" height="6" rx="3" fill="${shade(c, -45)}"/>
+  <circle cx="30" cy="86" r="10" fill="#403d52"/>
+  <circle cx="50" cy="86" r="10" fill="#403d52"/>
+  <circle cx="70" cy="86" r="10" fill="#403d52"/>
+  <circle cx="30" cy="86" r="4" fill="#8a869c"/>
+  <circle cx="50" cy="86" r="4" fill="#8a869c"/>
+  <circle cx="70" cy="86" r="4" fill="#8a869c"/>`);
 
 /* ── geometric shapes ──────────────────────────────────────────────────── */
 
