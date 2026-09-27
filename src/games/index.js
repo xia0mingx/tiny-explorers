@@ -10,5 +10,6 @@ import tracing from './tracing.js';
 import differences from './differences.js';
 import maze from './maze.js';
 import balance from './balance.js';
+import sortIt from './sortIt.js';
 
-export const GAMES = [counting, shapes, shadows, patterns, tracing, maze, differences, balance];
+export const GAMES = [counting, shapes, shadows, patterns, tracing, maze, differences, sortIt, balance];
