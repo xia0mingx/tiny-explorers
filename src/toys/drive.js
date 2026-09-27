@@ -30,6 +30,7 @@ const HISTORY_MAX = 400;
 const MIN_STEP = 2.5;       // only record a new trail point once moved at least this far
 const CARRIAGE_SPACING = 36; // arc-length gap behind the engine per carriage
 const STOP_THRESHOLD = 0.5;
+const VEHICLE_SCALE = 1.4;  // engine/carriages drawn at this scale so they read clearly on the wide map
 
 function carBody(color) {
   return `
@@ -163,10 +164,10 @@ export default {
 
     function applyTransforms() {
       const engine = rig.querySelector('.drive-engine');
-      if (engine) engine.setAttribute('transform', `translate(${pos.x} ${pos.y}) rotate(${angle})`);
+      if (engine) engine.setAttribute('transform', `translate(${pos.x} ${pos.y}) rotate(${angle}) scale(${VEHICLE_SCALE})`);
       rig.querySelectorAll('.drive-carriage').forEach((carEl, idx) => {
         const back = pointBehind(CARRIAGE_SPACING * (idx + 1));
-        carEl.setAttribute('transform', `translate(${back.x} ${back.y}) rotate(${back.angle})`);
+        carEl.setAttribute('transform', `translate(${back.x} ${back.y}) rotate(${back.angle}) scale(${VEHICLE_SCALE})`);
       });
     }
 
