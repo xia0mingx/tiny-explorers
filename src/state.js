@@ -12,6 +12,7 @@ const DEFAULTS = {
   stars: {},                 // "<gameId>:<age>" -> total stars earned
   settings: { sound: true, autoSpeak: false },
   disabledGames: {},         // "<gameId>" -> true; absent/false means enabled
+  disabledToys: {},          // "<toyId>" -> true; absent/false means enabled
 };
 
 let data = load();
@@ -27,6 +28,7 @@ function load() {
       settings: { ...DEFAULTS.settings, ...(parsed.settings || {}) },
       stars: parsed.stars || {},
       disabledGames: parsed.disabledGames || {},
+      disabledToys: parsed.disabledToys || {},
     };
   } catch {
     // Corrupt or unavailable storage (private mode) must not brick the app.
@@ -81,5 +83,16 @@ export const isGameEnabled = (gameId) => !data.disabledGames[gameId];
 export function setGameEnabled(gameId, enabled) {
   if (enabled) delete data.disabledGames[gameId];
   else data.disabledGames[gameId] = true;
+  save();
+}
+
+/** Same "absent means enabled" rule as isGameEnabled, applied to the
+ *  free-play toys — a separate map since toy ids and game ids are separate
+ *  namespaces that could otherwise collide. */
+export const isToyEnabled = (toyId) => !data.disabledToys[toyId];
+
+export function setToyEnabled(toyId, enabled) {
+  if (enabled) delete data.disabledToys[toyId];
+  else data.disabledToys[toyId] = true;
   save();
 }

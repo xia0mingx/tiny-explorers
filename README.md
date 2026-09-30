@@ -212,19 +212,19 @@ who taps everything. It guards the sound toggles, the progress reset, and the
 per-game switches below — not anything dangerous, since there's nothing
 dangerous in the app.
 
-### Turning individual games off
+### Turning individual games and toys off
 
-Settings has a switch for each of the 8 quiz games, letting a grown-up trim
-the home screen down to just the games they want their kid seeing right now —
-useful for steering a child toward a skill they're working on, or away from
-one they've outgrown. Off games are stored in `disabledGames` in localStorage
-(`src/state.js`'s `isGameEnabled`/`setGameEnabled`); a game **not** in that map
-counts as enabled, so a game added later is never silently hidden by an old
-save. The home screen's grid filters to enabled games and re-renders the
-moment the settings sheet closes, so a toggle takes effect immediately. If
-every game gets turned off, the grid shows a short explanation instead of
-going blank. Free Play's toys aren't affected — only the 8 quiz games can be
-toggled.
+Settings has a switch for each quiz game and each Free Play toy, letting a
+grown-up trim the home screen down to just what they want their kid seeing
+right now — useful for steering a child toward a skill they're working on,
+or away from one they've outgrown. Off games/toys are stored in
+`disabledGames`/`disabledToys` in localStorage (`src/state.js`'s
+`isGameEnabled`/`setGameEnabled` and `isToyEnabled`/`setToyEnabled`); an id
+**not** in the relevant map counts as enabled, so a game or toy added later
+is never silently hidden by an old save. Both home-screen grids filter to
+enabled entries and re-render the moment the settings sheet closes, so a
+toggle takes effect immediately. If every game (or every toy) gets turned
+off, that grid shows a short explanation instead of going blank.
 
 ## Regenerating the icons
 
