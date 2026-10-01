@@ -26,13 +26,39 @@ import { PALETTE, shade } from '../art.js';
 import { sfx } from '../audio.js';
 
 const EASE = 0.14;
-const HISTORY_MAX = 400;
+const HISTORY_MAX = 600;
 const MIN_STEP = 2.5;       // only record a new trail point once moved at least this far
-const CARRIAGE_SPACING = 62; // arc-length gap behind the engine per carriage — bigger than a
-                              // carriage's own on-screen width (VEHICLE_SCALE included) so
-                              // each one is fully visible instead of stacked behind the last
 const STOP_THRESHOLD = 0.5;
-const VEHICLE_SCALE = 1.4;  // engine/carriages drawn at this scale so they read clearly on the wide map
+const VEHICLE_SCALE = 1.8;  // engine/carriages drawn at this scale so they read clearly on the wide map
+const MAP_ZOOM = 1.3;       // the viewBox shows the central 1/MAP_ZOOM of the generated town, so everything reads bigger
+const CARRIAGE_COUNT = 4;
+// Arc-length gap behind the engine per carriage — a touch more than a
+// carriage's own on-screen width (44 units * VEHICLE_SCALE) so each one is
+// fully visible with a small gap, instead of stacked behind the last.
+const CARRIAGE_SPACING = 50 * VEHICLE_SCALE;
+
+const SKINS = ['#ffd9b8', '#f2b88a', '#c98d5f', '#8d5a3b'];
+const HAIRS = ['#403d52', '#7a4a2a', '#e8b84a', '#c0502b'];
+const makePerson = () => ({ skin: pick(SKINS), hair: pick(HAIRS), shirt: pick(PALETTE) });
+
+/** A small passenger sitting inside a window box (wx, wy, ww, wh):
+ *  shoulders, head, hair cap and a tiny face, all derived from the box so the
+ *  same function fits the engine's cab window and the carriages' side windows. */
+function passenger(wx, wy, ww, wh, p) {
+  const cx = wx + ww / 2;
+  const r = Math.min(ww, wh) * 0.3;
+  const hy = wy + wh * 0.4;
+  const bottom = wy + wh;
+  const shoulderTop = hy + r * 0.8;
+  return `
+    <path d="M${cx - ww * 0.38} ${bottom} Q${cx} ${2 * shoulderTop - bottom} ${cx + ww * 0.38} ${bottom} Z" fill="${p.shirt}"/>
+    <circle cx="${cx}" cy="${hy}" r="${r}" fill="${p.skin}"/>
+    <path d="M${cx - r} ${hy} A${r} ${r} 0 0 1 ${cx + r} ${hy} Q${cx} ${hy - r * 0.5} ${cx - r} ${hy} Z" fill="${p.hair}"/>
+    <circle cx="${cx - r * 0.4}" cy="${hy + r * 0.15}" r="${r * 0.14}" fill="#403d52"/>
+    <circle cx="${cx + r * 0.4}" cy="${hy + r * 0.15}" r="${r * 0.14}" fill="#403d52"/>
+    <path d="M${cx - r * 0.35} ${hy + r * 0.5} Q${cx} ${hy + r * 0.85} ${cx + r * 0.35} ${hy + r * 0.5}"
+          stroke="#403d52" stroke-width="0.7" fill="none" stroke-linecap="round"/>`;
+}
 
 function carBody(color) {
   return `
@@ -46,7 +72,7 @@ function carBody(color) {
     <circle cx="18" cy="12" r="3.4" fill="#8a869c"/>`;
 }
 
-function trainEngine(color) {
+function trainEngine(color, driver) {
   return `
     <ellipse cx="0" cy="18" rx="30" ry="6" fill="#00000022"/>
     <path d="M18 12 L30 22 L14 22 Z" fill="${shade(color, -25)}"/>
@@ -55,6 +81,7 @@ function trainEngine(color) {
     <path d="M8 -34 L11 -49 L19 -49 L22 -34 Z" fill="${shade(color, -25)}"/>
     <ellipse cx="15" cy="-49" rx="6" ry="2.2" fill="${shade(color, -45)}"/>
     <rect x="-20" y="-9" width="17" height="13" rx="3" fill="#cdeeff" opacity=".9"/>
+    ${passenger(-20, -9, 17, 13, driver)}
     <circle cx="26" cy="-4" r="3.6" fill="#ffd449"/>
     <rect x="-22" y="11" width="40" height="5" rx="2.5" fill="${shade(color, -45)}"/>
     <circle cx="-15" cy="14" r="8" fill="#403d52"/>
@@ -65,12 +92,14 @@ function trainEngine(color) {
     <circle cx="18" cy="14" r="3" fill="#8a869c"/>`;
 }
 
-function carriage(color) {
+function carriage(color, [left, right]) {
   return `
     <ellipse cx="0" cy="15" rx="24" ry="5" fill="#00000022"/>
     <rect x="-22" y="-14" width="44" height="26" rx="8" fill="${color}"/>
-    <rect x="-14" y="-8" width="12" height="10" rx="2" fill="#cdeeff" opacity=".85"/>
-    <rect x="2" y="-8" width="12" height="10" rx="2" fill="#cdeeff" opacity=".85"/>
+    <rect x="-19" y="-10" width="15" height="14" rx="3" fill="#cdeeff" opacity=".9"/>
+    <rect x="4" y="-10" width="15" height="14" rx="3" fill="#cdeeff" opacity=".9"/>
+    ${passenger(-19, -10, 15, 14, left)}
+    ${passenger(4, -10, 15, 14, right)}
     <circle cx="-13" cy="12" r="7" fill="#403d52"/>
     <circle cx="13" cy="12" r="7" fill="#403d52"/>`;
 }
@@ -172,6 +201,16 @@ function bestGrid(aspect) {
   return best;
 }
 
+/** viewBox showing the centre 1/MAP_ZOOM of a cols x rows town — the scene is
+ *  still drawn at full size, the edges are simply cropped off. */
+function viewBoxFor(cols, rows) {
+  const fullW = cols * BLOCK_W;
+  const fullH = rows * BLOCK_H;
+  const w = fullW / MAP_ZOOM;
+  const h = fullH / MAP_ZOOM;
+  return `${(fullW - w) / 2} ${(fullH - h) / 2} ${w} ${h}`;
+}
+
 export default {
   id: 'drive',
   title: 'Drive',
@@ -199,10 +238,16 @@ export default {
     let dragging = false;
     let rafId = null;
     const history = [];
+    // Passengers are rolled once per visit, not per rebuildRig(), so picking a
+    // new colour doesn't also swap everyone aboard for different people.
+    const crew = {
+      driver: makePerson(),
+      carriages: Array.from({ length: CARRIAGE_COUNT }, () => [makePerson(), makePerson()]),
+    };
 
     const toolbar = el('div', { class: 'drive-toolbar' });
     const wrap = el('div', { class: 'drive-wrap' });
-    wrap.innerHTML = `<svg viewBox="0 0 ${cols * BLOCK_W} ${rows * BLOCK_H}" class="drive-svg">
+    wrap.innerHTML = `<svg viewBox="${viewBoxFor(cols, rows)}" class="drive-svg">
       <g class="drive-scene"></g>
       <g class="drive-rig"></g></svg>`;
     ctx.stage.append(el('div', { class: 'drive-shell' }, toolbar, wrap));
@@ -212,7 +257,7 @@ export default {
     const rig = wrap.querySelector('.drive-rig');
 
     // Walks backward through the trail accumulating real distance travelled,
-    // so "36 units behind the engine" means the same visual gap whether the
+    // so "one carriage-length behind the engine" means the same visual gap whether the
     // engine got there by racing across the map or by easing to a stop.
     function pointBehind(distanceBack) {
       if (history.length === 0) return { ...pos, angle };
@@ -227,20 +272,35 @@ export default {
     function applyTransforms() {
       const engine = rig.querySelector('.drive-engine');
       if (engine) engine.setAttribute('transform', `translate(${pos.x} ${pos.y}) rotate(${angle}) scale(${VEHICLE_SCALE})`);
-      rig.querySelectorAll('.drive-carriage').forEach((carEl, idx) => {
-        const back = pointBehind(CARRIAGE_SPACING * (idx + 1));
+      rig.querySelectorAll('.drive-carriage').forEach((carEl) => {
+        const back = pointBehind(CARRIAGE_SPACING * (Number(carEl.dataset.i) + 1));
         carEl.setAttribute('transform', `translate(${back.x} ${back.y}) rotate(${back.angle}) scale(${VEHICLE_SCALE})`);
       });
     }
 
-    function rebuildRig() {
+    // Pre-fills the trail with a straight run behind the engine along its
+    // current heading, so the carriages start lined up behind it instead of
+    // all stacked on top of the engine until the first drag lays real trail.
+    function seedTrail() {
       history.length = 0;
-      let html = `<g class="drive-engine">${mode === 'car' ? carBody(color) : trainEngine(color)}</g>`;
-      if (mode === 'train') {
-        html += `<g class="drive-carriage">${carriage(color)}</g>`;
-        html += `<g class="drive-carriage">${carriage(shade(color, -18))}</g>`;
+      if (mode !== 'train') return;
+      const rad = (angle * Math.PI) / 180;
+      const reach = CARRIAGE_SPACING * CARRIAGE_COUNT + MIN_STEP * 2;
+      for (let d = reach; d >= 0; d -= MIN_STEP) {
+        history.push({ x: pos.x - Math.cos(rad) * d, y: pos.y - Math.sin(rad) * d, angle });
       }
+    }
+
+    function rebuildRig() {
+      let html = '';
+      if (mode === 'train') {
+        for (let i = CARRIAGE_COUNT - 1; i >= 0; i -= 1) {
+          html += `<g class="drive-carriage" data-i="${i}">${carriage(i % 2 ? shade(color, -18) : color, crew.carriages[i])}</g>`;
+        }
+      }
+      html += `<g class="drive-engine">${mode === 'car' ? carBody(color) : trainEngine(color, crew.driver)}</g>`;
       rig.innerHTML = html;
+      seedTrail();
       applyTransforms();
     }
 
@@ -265,16 +325,16 @@ export default {
       if (!changed && sceneReady) return;
       cols = grid.cols;
       rows = grid.rows;
-      svg.setAttribute('viewBox', `0 0 ${cols * BLOCK_W} ${rows * BLOCK_H}`);
+      svg.setAttribute('viewBox', viewBoxFor(cols, rows));
       renderScene();
       sceneReady = true;
       // The tile count just changed size/shape (e.g. a device rotation) —
-      // recentre the vehicle and drop the carriage trail rather than leaving
-      // it pointing at coordinates from the old grid, which would otherwise
-      // render the train's carriages disconnected from the engine.
+      // recentre the vehicle and re-seed the carriage trail rather than
+      // leaving it pointing at coordinates from the old grid, which would
+      // otherwise render the train's carriages disconnected from the engine.
       pos.x = target.x = (cols * BLOCK_W) / 2;
       pos.y = target.y = (rows * BLOCK_H) / 2;
-      history.length = 0;
+      seedTrail();
       applyTransforms();
     }
 

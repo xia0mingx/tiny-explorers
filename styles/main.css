@@ -777,15 +777,15 @@ a.credit-link {
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 10px;
 }
 
 .draw-mode, .draw-clear {
-  min-height: 52px;
-  padding: 0 20px;
+  min-height: 68px;
+  padding: 0 28px;
   border-radius: 999px;
   font-weight: 800;
-  font-size: 15px;
+  font-size: 19px;
   background: var(--card);
   box-shadow: var(--lift);
 }
@@ -793,8 +793,8 @@ a.credit-link {
 .draw-clear { background: #fff2ea; color: #c65a2e; }
 
 .brush-size {
-  width: 52px;
-  height: 52px;
+  width: 68px;
+  height: 68px;
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -805,10 +805,10 @@ a.credit-link {
 .brush-size.active { background: var(--bg-2); box-shadow: inset 0 0 0 3px var(--pink); }
 
 .stamp-choice {
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
-  padding: 6px;
+  width: 68px;
+  height: 68px;
+  border-radius: 20px;
+  padding: 8px;
   background: var(--card);
   box-shadow: var(--lift);
 }
@@ -816,8 +816,8 @@ a.credit-link {
 .stamp-choice svg { width: 100%; height: 100%; }
 
 .swatch {
-  width: 36px;
-  height: 36px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   box-shadow: var(--lift);
 }
@@ -1043,28 +1043,22 @@ a.credit-link {
   flex-direction: column;
   gap: 8px;
 }
-/* gap is 6px, and .swatch is 36px rather than the more common 40px,
-   specifically to buy margin against the one-line fit: at 3 mode buttons +
-   10 swatches, the row's needed width was landing within 1px of the
-   available width at ~760px viewports (a real, reproduced wrap where a
-   single leftover swatch drops to its own line, wasting a whole row of
-   height on the toolbar). This trim isn't about a specific pixel target —
-   there's always some width where a fixed set of items just barely
-   doesn't fit — it's about pushing that boundary narrower than the range
-   of common tablet/phone-landscape widths this toy is actually used at. */
+/* Controls are deliberately large (68px buttons, 48px swatches) because a
+   toddler is the one tapping them on an iPad; the row simply wraps to a
+   second line on narrower screens, trading some map height for tap size. */
 .drive-row {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 10px;
 }
 .drive-mode, .drive-horn {
-  min-height: 52px;
-  padding: 0 20px;
+  min-height: 68px;
+  padding: 0 28px;
   border-radius: 999px;
   font-weight: 800;
-  font-size: 15px;
+  font-size: 19px;
   background: var(--card);
   box-shadow: var(--lift);
 }
