@@ -10,5 +10,6 @@ import dotToDot from './dotToDot.js';
 import drive from './drive.js';
 import gears from './gears.js';
 import bubblePop from './bubblePop.js';
+import trainSet from './trainSet.js';
 
-export const TOYS = [drawing, dressup, music, dotToDot, drive, gears, bubblePop];
+export const TOYS = [drawing, dressup, music, dotToDot, drive, trainSet, gears, bubblePop];

@@ -1,7 +1,7 @@
 # Tiny Explorers
 
-A tablet-first learning app for **2-5 year olds**: eight quiz-style games with
-a difficulty level for each age, plus a Free Play section of six open-ended
+A tablet-first learning app for **2-5 year olds**: nine quiz-style games with
+a difficulty level for each age, plus a Free Play section of eight open-ended
 toys with no score and no correct answer. Built to be played on an iPad, held
 sideways, by a child who cannot read yet — but every screen also fits a phone,
 portrait or landscape, since a parent handing over their phone for five
@@ -74,6 +74,7 @@ star progress actually durable.
 | **Tracing** | pre-writing | lines, arcs | zigzag, wave, circle | circle, square, triangle | **numbers and letters** |
 | **Mazes** | planning | 3x3 | 4x4 | 5x5 | 6x6 |
 | **Spot It** | attention to detail | 1 difference | 2 | 3 | 4, incl. mirrored |
+| **Sort It** | categorising | 3 animals/things to sort | 4 | 5 | 6 |
 | **Balance Scale** | comparison / early physics | up to 3 items/side | up to 4 | up to 6 | up to 8 |
 
 Each session is a handful of rounds (3-6 depending on the game) and ends in a
@@ -91,7 +92,7 @@ question asks how many are left.
 
 ## Free Play
 
-Six open-ended toys, modelled on the Montessori-style "no objective, just
+Eight open-ended toys, modelled on the Montessori-style "no objective, just
 tinker" toys in apps like Pok Pok, rather than the quiz format above. Opening
 one never shows a prompt or a star track — there's nothing to get right or
 wrong, so a session ends whenever the child taps back, not when a round is won.
@@ -101,9 +102,11 @@ wrong, so a session ends whenever the child taps back, not when a round is won.
 | **Drawing** | Finger-paint (Brush mode) or tap to place a coloured sprite (Stamp mode), on a blank canvas. Clear is instant — nothing here is precious. |
 | **Dress-Up** | Pick a friend (5 shapes), a colour, a costume (6 outfits) and a hat (7 accessories) — over 2,000 combinations; a shuffle button randomises all four at once. "Place in a scene" then drops the finished character onto a house, park, space, or beach backdrop to drag around. |
 | **Music Maker** | An 8-step, 5-row sequencer tuned to a pentatonic scale, so every combination a child taps sounds pleasant — there's no wrong note. |
-| **Dot to Dot** | Numbered dots trace out a shape — circles and stars through to a car, a snowman, or a fish — connecting them in order fills it in with colour, then a new shape starts automatically. |
+| **Dot to Dot** | Numbered dots trace out a shape — circles and stars through to a car, a snowman, or a fish — with a dot on every corner. Tap them in order or drag a finger through them; finishing fills the shape in, gives it a smiling face and names it, then a new shape starts automatically. |
 | **Drive** | Drag a car or a little toy train around a birds-eye town map of streets and blocks — switching to Train swaps the streets for rail tracks; the vehicle eases toward your finger and the train's carriages trail the engine at a fixed distance along its own path. A Honk button and a colour picker are the only other controls. |
+| **Train Set** | A birds-eye toy railway: a random loop of track through a little landscape, with a train that chugs round on its own puffing smoke. Toot! (or tapping the train) blows the whistle, + / − add or drop carriages of passengers, New track lays a fresh loop, and the swatches repaint the train. |
 | **Gear Machine** | Drag any gear in a meshed chain of three and the whole chain turns with your finger — each neighbour spins the opposite way, faster or slower by its size, exactly like a real gear train. A quick tap instead gives it a flick that spins and winds down on its own. A shuffle button just recolours the gears. |
+| **Bubble Pop** | Bubbles drift up from the bottom forever; tap one to pop it. The simplest cause-and-effect toy, for the youngest end of the age range. |
 
 ## Design rules
 
@@ -145,7 +148,8 @@ index.html
   src/toyShell.js         free-play shell: just chrome + teardown, no rounds
   src/games/*.js          one module per quiz game — renders a round, calls ctx.win()
   src/toys/*.js           one module per free-play toy (drawing, dress-up,
-                          music, dot to dot, drive, gears) — no win state at all
+                          music, dot to dot, drive, train set, gears,
+                          bubble pop) — no win state at all
   src/art.js              every sprite, drawn in code
   src/audio.js            WebAudio effects + on-demand speech synthesis
   src/state.js            localStorage (age, stars, sound/speech settings)
@@ -303,18 +307,14 @@ no Pillow). PNGs are needed because iPadOS's "Add to Home Screen" reads
   deliberately target the way they do a `.choice` card. Don't lower `--tap`
   itself, and don't extend this shrink to anything the child actually plays
   with.
-- **Drive's town map tiles to fit whatever aspect ratio the container turns out
-  to be**, rather than assuming landscape. Earlier it was a fixed 600x200 (3:1)
-  strip, chosen so width was the constrained dimension on typical
-  landscape screens — but on a phone/tablet in portrait the container is
-  taller than it is wide, so that same fixed strip left most of the screen as
-  blank margin above and below. `bestGrid()` in `src/toys/drive.js` instead
-  searches small `cols`/`rows` tile counts and scores each by how close
-  `(cols*BLOCK_W)/(rows*BLOCK_H)` lands to the container's actual
-  width/height (measured via `ResizeObserver`, not assumed), so it reduces to
-  the old "two tiles side by side" on wide screens and grows rows instead of
-  margin on tall ones, with no separate portrait/landscape branch. `sceneMarkup()`
-  is regenerated whenever the fit changes.
+- **Drive's map zoom is sized from the container's pixel size, not a tile
+  count.** `viewFor()` in `src/toys/drive.js` shows the smallest view of at
+  least `VIEW_MIN_W` x `VIEW_MIN_H` map units with the container's exact
+  aspect ratio, then tiles enough town to cover it — so one screen pixel is
+  the same fraction of the map on every device, nothing letterboxes, and the
+  zoom doesn't jump. (An earlier `bestGrid()` picked whichever tile grid's
+  aspect best matched the container, which swung between one huge tile and
+  several small ones as the available height shifted by a few dozen pixels.)
 - No test suite. Verification so far has been done by driving the real app in a
   browser; if this grows, the pure logic worth testing first is maze generation,
   pattern sequencing, and the tracing waypoint advance.
