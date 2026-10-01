@@ -29,7 +29,7 @@ const EASE = 0.14;
 const HISTORY_MAX = 600;
 const MIN_STEP = 2.5;       // only record a new trail point once moved at least this far
 const STOP_THRESHOLD = 0.5;
-const VEHICLE_SCALE = 1.8;  // engine/carriages drawn at this scale so they read clearly on the wide map
+const VEHICLE_SCALE = 1.5;  // engine/carriages drawn at this scale so they read clearly on the wide map
 // The view always covers at least this much of the town (in map units), whatever
 // the screen shape — so zoom is the same on every device and the 4-carriage
 // train always fits across the screen.
