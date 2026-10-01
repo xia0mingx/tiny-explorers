@@ -78,6 +78,13 @@ svg { display: block; overflow: visible; }
   padding: clamp(6px, 1.6vh, 14px) clamp(14px, 2.4vw, 28px);
 }
 
+/* Toys put their controls in the top bar's free right-hand side (see
+   toyShell.js) so the stage underneath is all canvas. The title shrinks to
+   its text and the tools take the rest of the row, wrapping as needed. */
+.topbar-tools { display: none; }
+.topbar.has-tools .topbar-tools { display: block; flex: 1 1 0; min-width: 0; }
+.topbar.has-tools .title-block { flex: 0 0 auto; }
+
 .icon-btn {
   width: var(--tap);
   height: var(--tap);
@@ -777,12 +784,12 @@ a.credit-link {
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 
 .draw-mode, .draw-clear {
   min-height: 68px;
-  padding: 0 28px;
+  padding: 0 24px;
   border-radius: 999px;
   font-weight: 800;
   font-size: 19px;
@@ -1051,11 +1058,11 @@ a.credit-link {
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 .drive-mode, .drive-horn {
   min-height: 68px;
-  padding: 0 28px;
+  padding: 0 24px;
   border-radius: 999px;
   font-weight: 800;
   font-size: 19px;
