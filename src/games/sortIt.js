@@ -3,51 +3,87 @@
    game in the roster: they all ask "which looks the same" (shape/colour/
    silhouette matching); this one asks "which kind is it".
 
-   Each basket carries a small pale hint icon — one example already
-   "sorted", colourless like Shapes' hole — instead of a text label, so
-   which side is which never depends on reading. Left/right assignment is
-   randomised every round so a child can't just learn "animals go left".
+   Which basket is which has to be obvious without reading, so each one is
+   a different colour (green for animals, yellow for things) and wears a
+   header band showing two full-colour examples of what goes inside. The
+   examples are picked from sprites *not* in this round's tray where
+   possible, so the child sorts by kind rather than matching an identical
+   picture. Left/right assignment is randomised every round so a child
+   can't just learn "animals go left".
 
-   A wrong drop bounces the item back to its spot in the tray rather than
-   penalising anything — same "no fail state" rule as every other game.
+   While dragging, the basket under the finger thickens its outline so it's
+   clear where the item will land. A wrong drop bounces the item back to
+   its spot in the tray and briefly pulses the basket it *does* belong in —
+   a nudge in the right direction, never a penalty, same "no fail state"
+   rule as every other game.
 */
 
 import { el, pick, shuffle, range } from '../util.js';
-import { spriteBody, toSilhouette, ANIMALS, OBJECTS, PALETTE } from '../art.js';
+import { spriteBody, ANIMALS, OBJECTS, PALETTE } from '../art.js';
 
 /** Items per round — the only difficulty knob, same idea as Balance's
  *  MAX_ITEMS: how much can be held in mind at once, not a harder rule. */
 const CONFIG = { 2: 3, 3: 4, 4: 5, 5: 6 };
 
 const VB_W = 300;
-const VB_H = 190;
+const VB_H = 206;
 const ITEM = 46;              // tray sprite size, in viewBox units
-const BIN_Y = 118;
-const BIN_H = 58;
-const BIN_W = 132;
+const TRAY_Y = 34;
+const BIN_Y = 76;
+const BIN_H = 122;
+const BIN_W = 138;
+const BIN_MARGIN = 8;
+const BAND_H = 44;            // coloured header band holding the examples
+const EXAMPLE = 36;
 const SLOT_SIZE = 30;
-const SLOT_GAP = 26;
-const HINT_TONE = '#ded8ea';  // same colourless hint tone Shapes' hole uses
+const SLOTS_PER_ROW = 3;      // 2 rows x 3 fits the most one bin can get (5)
 
-function binHint(sprite) {
-  return `<svg x="10" y="8" width="26" height="26" viewBox="0 0 100 100" opacity=".6">
-            ${toSilhouette(spriteBody(sprite), HINT_TONE)}
-          </svg>`;
-}
+/** Each category's look — colour is the at-a-glance cue, the examples in
+ *  the band say what the colour means. */
+const STYLE = {
+  animal: { band: '#8ee36b', body: '#effbe9', line: '#5fbf3a' },
+  object: { band: '#ffd45c', body: '#fff7dc', line: '#e8a900' },
+};
 
 function binMarkup(bin) {
+  const st = STYLE[bin.category];
+  const examples = bin.examples.map((ex, i) => {
+    const x = BIN_W / 2 + (i === 0 ? -EXAMPLE - 4 : 4);
+    return `<svg x="${x}" y="${(BAND_H - EXAMPLE) / 2}" width="${EXAMPLE}" height="${EXAMPLE}"
+                 viewBox="0 0 100 100">${spriteBody(ex.sprite, ex.color)}</svg>`;
+  }).join('');
   return `
     <g transform="translate(${bin.x},${BIN_Y})">
-      <rect width="${BIN_W}" height="${BIN_H}" rx="18" fill="#f4f1fa" stroke="#ded8ea" stroke-width="3"/>
-      ${binHint(bin.hint)}
-      <g class="bin-slots" data-side="${bin.side}"></g>
+      <g class="sort-bin" data-bin="${bin.side}">
+        <rect width="${BIN_W}" height="${BIN_H}" rx="18" fill="${st.body}"/>
+        <rect width="${BIN_W}" height="${BAND_H}" rx="18" fill="${st.band}"/>
+        <rect y="${BAND_H - 18}" width="${BIN_W}" height="18" fill="${st.band}"/>
+        ${examples}
+        <rect class="bin-outline" width="${BIN_W}" height="${BIN_H}" rx="18"
+              fill="none" stroke="${st.line}" stroke-width="3"/>
+        <g class="bin-slots" data-side="${bin.side}"></g>
+      </g>
     </g>`;
 }
 
-/** Where the nth item sorted into a bin sits, so items line up in a small
- *  row instead of stacking on top of each other. */
+/** Where the nth item sorted into a bin sits — a 3-wide grid under the
+ *  band, so items line up instead of stacking or spilling past the edge. */
 function slotPos(n) {
-  return { x: 22 + n * SLOT_GAP, y: BIN_H / 2 + 3 };
+  const col = n % SLOTS_PER_ROW;
+  const row = Math.floor(n / SLOTS_PER_ROW);
+  const gap = BIN_W / SLOTS_PER_ROW;
+  return { x: gap / 2 + col * gap, y: BAND_H + 21 + row * 36 };
+}
+
+/** Two examples of a category for a bin's band, preferring sprites that
+ *  aren't in the tray this round. */
+function pickExamples(category, items) {
+  const pool = category === 'animal' ? ANIMALS : OBJECTS;
+  const used = new Set(items.map((it) => it.sprite));
+  const fresh = pool.filter((s) => !used.has(s));
+  const source = fresh.length >= 2 ? fresh : pool;
+  const colors = shuffle(PALETTE);
+  return shuffle(source).slice(0, 2).map((sprite, i) => ({ sprite, color: colors[i] }));
 }
 
 export default {
@@ -84,20 +120,19 @@ export default {
     }));
 
     items.forEach((it, i) => {
-      const home = { x: ((i + 1) * VB_W) / (items.length + 1), y: 42 };
+      const home = { x: ((i + 1) * VB_W) / (items.length + 1), y: TRAY_Y };
       it.home = home;
       it.pos = { ...home };
     });
 
     const catOrder = shuffle(['animal', 'object']);
     const bins = {
-      left:  { side: 'left',  x: 14,                    category: catOrder[0] },
-      right: { side: 'right', x: VB_W - BIN_W - 14,      category: catOrder[1] },
+      left:  { side: 'left',  x: BIN_MARGIN,                category: catOrder[0] },
+      right: { side: 'right', x: VB_W - BIN_W - BIN_MARGIN, category: catOrder[1] },
     };
-    bins.left.hint = pick(bins.left.category === 'animal' ? ANIMALS : OBJECTS);
-    bins.right.hint = pick(bins.right.category === 'animal' ? ANIMALS : OBJECTS);
+    for (const bin of Object.values(bins)) bin.examples = pickExamples(bin.category, items);
 
-    ctx.prompt('Sort them into the right basket!');
+    ctx.prompt('Animals in one basket, things in the other!');
 
     const wrap = el('div', { class: 'stage-figure' });
     wrap.innerHTML = `
@@ -112,6 +147,26 @@ export default {
     const tray = wrap.querySelector('.tray');
     const leftSlots = wrap.querySelector('[data-side="left"]');
     const rightSlots = wrap.querySelector('[data-side="right"]');
+    const binEls = {
+      left: wrap.querySelector('[data-bin="left"]'),
+      right: wrap.querySelector('[data-bin="right"]'),
+    };
+
+    /** Thicken the outline of whichever basket the dragged item is over. */
+    const setHot = (side) => {
+      for (const [k, node] of Object.entries(binEls)) node.classList.toggle('is-hot', k === side);
+    };
+
+    let hintTimer = 0;
+    /** Pulse the basket an item really belongs in after a wrong drop. */
+    const showHint = (side) => {
+      const node = binEls[side];
+      node.classList.remove('is-hint');
+      void node.getBBox(); // restart the animation if it's mid-pulse
+      node.classList.add('is-hint');
+      clearTimeout(hintTimer);
+      hintTimer = setTimeout(() => node.classList.remove('is-hint'), 1000);
+    };
 
     const itemMarkup = (it, idx) => `
       <g data-idx="${idx}" transform="translate(${it.pos.x},${it.pos.y})" style="cursor:pointer">
@@ -169,6 +224,7 @@ export default {
     const onMove = (e) => {
       if (grabbed === null) return;
       items[grabbed].pos = toSvgPoint(e);
+      setHot(binAt(items[grabbed].pos));
       paintTray();
       e.preventDefault();
     };
@@ -177,6 +233,7 @@ export default {
       if (grabbed === null) return;
       const it = items[grabbed];
       grabbed = null;
+      setHot(null);
       const drop = binAt(it.pos);
 
       if (!drop) { it.pos = { ...it.home }; paintTray(); return; }
@@ -189,6 +246,7 @@ export default {
         else ctx.ping();
       } else {
         ctx.nudge(wrap);
+        showHint(drop === 'left' ? 'right' : 'left');
         it.pos = { ...it.home };
         paintTray();
       }
@@ -199,6 +257,7 @@ export default {
     svg.addEventListener('pointerup', onUp);
     svg.addEventListener('pointercancel', onUp);
     ctx.onCleanup(() => {
+      clearTimeout(hintTimer);
       svg.removeEventListener('pointerdown', onDown);
       svg.removeEventListener('pointermove', onMove);
       svg.removeEventListener('pointerup', onUp);
