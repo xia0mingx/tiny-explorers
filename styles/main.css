@@ -1173,6 +1173,9 @@ a.credit-link {
 }
 .trainset-svg { width: 100%; height: 100%; touch-action: none; display: block; }
 .trainset-count { min-width: 68px; padding: 0; font-size: 30px; line-height: 1; }
+.trainset-speed { min-width: 68px; padding: 6px 12px; }
+.trainset-speed svg { width: 44px; height: 44px; display: block; }
+.trainset-svg.drawing { cursor: crosshair; }
 
 /* ── Bubble Pop ────────────────────────────────────────────────────────── */
 
