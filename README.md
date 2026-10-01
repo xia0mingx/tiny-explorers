@@ -75,7 +75,7 @@ star progress actually durable.
 | **Mazes** | planning | 3x3 | 4x4 | 5x5 | 6x6 |
 | **Spot It** | attention to detail | 1 difference | 2 | 3 | 4, incl. mirrored |
 | **Sort It** | categorising | 3 animals/things to sort | 4 | 5 | 6 |
-| **Balance Scale** | comparison / early physics | up to 3 items/side | up to 4 | up to 6 | up to 8 |
+| **Balance Scale** | equal amounts / early physics — drag items on or off until it levels | up to 3 per pan, 1 spare | up to 4, 2 spare | up to 6, 2 spare | up to 8, 3 spare |
 
 Each session is a handful of rounds (3-6 depending on the game) and ends in a
 celebration, which keeps a sitting to roughly two to four minutes — about the
