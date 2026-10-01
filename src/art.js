@@ -670,11 +670,11 @@ export const OUTFIT_IDS = ['none', 'shirt', 'dress', 'overalls', 'cape', 'astron
    regardless of whether the shape was originally a <path> or a <polygon>.
 
    Each entry is an ARRAY of one or more closed subpaths ("groups"). Most
-   shapes are a single group, but a few (the snowman, the car) are naturally drawn
-   as several separate closed loops — a head plus two ears, a body plus two
-   wheels. Dot-to-Dot samples and numbers each group separately and never
-   draws a connecting line between them, so a two-circle "ear" doesn't get a
-   stray line dragged across the middle of the head to reach it. */
+   shapes are a single group, but the car is naturally drawn as several
+   separate closed loops — a body plus two wheels. Dot-to-Dot samples and
+   numbers each group separately and never draws a connecting line between
+   them, so a wheel doesn't get a stray line dragged across the body to
+   reach it. */
 
 const pointsToPath = (points) => {
   const pts = points.trim().split(/\s+/);
@@ -703,12 +703,14 @@ export const SHAPE_OUTLINE = {
      plain circle with two oversized circles high and apart on it) is the
      Mickey Mouse trademark, which Disney holds perpetually and enforces
      hard, and a children's app is exactly the market where confusion is
-     assumed. Three stacked circles read as unmistakably generic while
-     still being a genuine multi-group outline, which is what this entry is
-     here to provide. */
-  snowman: [circlePath(50, 74, 20), circlePath(50, 46, 15), circlePath(50, 24, 11)],
+     assumed. Three stacked, overlapping balls read as unmistakably generic.
+     Drawn as ONE outline around all three (arcs meeting at the "necks")
+     rather than three separate circles: separate touching loops crowded
+     Dot-to-Dot's dots together wherever two balls met. */
+  snowman: ['M41.32 57.98 A20 20 0 1 0 58.68 57.98 A14 14 0 0 0 54.86 33.87 '
+          + 'A11 11 0 1 0 45.14 33.87 A14 14 0 0 0 41.32 57.98 Z'],
   car: [pointsToPath('10,74 10,60 26,60 36,38 64,38 74,60 90,60 90,74'),
-        circlePath(28, 80, 10), circlePath(72, 80, 10)],
+        circlePath(28, 84, 10), circlePath(72, 84, 10)],
 };
 
 /** Dot-to-Dot shape pools by age: fewer, simpler single-loop shapes for

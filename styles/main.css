@@ -1028,12 +1028,49 @@ a.credit-link {
   background: var(--card);
   box-shadow: var(--lift);
   padding: clamp(10px, 1.6vw, 22px);
+  position: relative;
 }
-.dot-svg { width: 100%; height: 100%; touch-action: none; }
-.dot { cursor: pointer; }
+.dot-svg { width: 100%; height: 100%; touch-action: none; display: block; }
+.dot { cursor: pointer; transition: opacity .4s ease; }
 .dot.pulse { animation: pulse 1.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 .dot.wrong { animation: wobble .45s ease; transform-box: fill-box; transform-origin: center; }
-.dot.done text { opacity: .45; }
+.dot.done circle { fill: #fffdf5; }
+.dot.done text { opacity: .4; }
+
+/* The reveal: dots and the straight-line trail fade away (so curved shapes
+   end up smooth), the true shape fills in and its face pops on. */
+.dot-fill { transition: opacity .6s ease; }
+.dot-face {
+  opacity: 0;
+  transform: scale(.4);
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: opacity .35s ease .35s, transform .5s cubic-bezier(.2, 1.6, .4, 1) .35s;
+}
+.dot-trail { transition: opacity .5s ease; }
+.dot-svg.finished .dot,
+.dot-svg.finished .dot-trail,
+.dot-svg.finished .dot-band { opacity: 0; pointer-events: none; }
+.dot-svg.finished .dot-fill { opacity: .9; }
+.dot-svg.finished .dot-face { opacity: 1; transform: scale(1); }
+
+.dot-caption {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(10px, 2vh, 22px);
+  transform: translate(-50%, 20px);
+  opacity: 0;
+  padding: 8px 22px;
+  border-radius: 999px;
+  background: var(--card);
+  box-shadow: var(--lift);
+  font-weight: 800;
+  font-size: clamp(20px, 3vw, 30px);
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity .3s ease .5s, transform .45s cubic-bezier(.2, 1.6, .4, 1) .5s;
+}
+.dot-caption.show { opacity: 1; transform: translate(-50%, 0); }
 
 /* ── Drive ─────────────────────────────────────────────────────────────── */
 
