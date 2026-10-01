@@ -30,7 +30,11 @@ const HISTORY_MAX = 600;
 const MIN_STEP = 2.5;       // only record a new trail point once moved at least this far
 const STOP_THRESHOLD = 0.5;
 const VEHICLE_SCALE = 1.8;  // engine/carriages drawn at this scale so they read clearly on the wide map
-const MAP_ZOOM = 1.3;       // the viewBox shows the central 1/MAP_ZOOM of the generated town, so everything reads bigger
+// The view always covers at least this much of the town (in map units), whatever
+// the screen shape — so zoom is the same on every device and the 4-carriage
+// train always fits across the screen.
+const VIEW_MIN_W = 520;
+const VIEW_MIN_H = 340;
 const CARRIAGE_COUNT = 4;
 // Arc-length gap behind the engine per carriage — a touch more than a
 // carriage's own on-screen width (44 units * VEHICLE_SCALE) so each one is
@@ -110,7 +114,7 @@ function carriage(color, [left, right]) {
    real place rather than an empty grid. Nothing here is a lane the vehicle
    is held to — it's a backdrop, exactly like the old park scene was.
 
-   The tile repeats in BOTH directions (see bestGrid below), so streets stay
+   The tile repeats in BOTH directions (see viewFor below), so streets stay
    continuous across tile seams and the result reads as one bigger town grid
    rather than a visibly repeated pattern. */
 function topTree(cx, cy, r) {
@@ -179,36 +183,24 @@ function sceneMarkup(mode, cols, rows) {
   return `<rect width="${cols * BLOCK_W}" height="${rows * BLOCK_H}" fill="#cdeccb"/>${tiles}`;
 }
 
-/* Picks how many BLOCK_W x BLOCK_H tiles to lay out side by side and stacked,
-   so the generated map's own aspect ratio comes as close as possible to the
-   container's — the fix for a map that used to be a fixed 3:1 strip and so
-   only ever filled the width, leaving a shrinking-to-huge blank margin above
-   and below on anything taller than very wide (most of all in portrait,
-   where the container is taller than it is wide). Trying every small
-   cols/rows pair and scoring by log-ratio (so a 2:1 mismatch in either
-   direction counts the same) naturally reduces to the old "tile twice
-   horizontally" behaviour on wide screens and grows rows instead of margin
-   on tall ones — no separate portrait/landscape branch needed. */
-function bestGrid(aspect) {
-  let best = { cols: 1, rows: 1, score: Infinity };
-  for (let cols = 1; cols <= 4; cols += 1) {
-    for (let rows = 1; rows <= 4; rows += 1) {
-      const contentAspect = (cols * BLOCK_W) / (rows * BLOCK_H);
-      const score = Math.abs(Math.log(contentAspect / aspect));
-      if (score < best.score) best = { cols, rows, score };
-    }
-  }
-  return best;
-}
-
-/** viewBox showing the centre 1/MAP_ZOOM of a cols x rows town — the scene is
- *  still drawn at full size, the edges are simply cropped off. */
-function viewBoxFor(cols, rows) {
-  const fullW = cols * BLOCK_W;
-  const fullH = rows * BLOCK_H;
-  const w = fullW / MAP_ZOOM;
-  const h = fullH / MAP_ZOOM;
-  return `${(fullW - w) / 2} ${(fullH - h) / 2} ${w} ${h}`;
+/* Works out what part of the town to show for a container of the given pixel
+   size: the smallest view at least VIEW_MIN_W x VIEW_MIN_H map units that has
+   the container's exact aspect ratio, so one screen pixel is the same fraction
+   of the map on every device and the map never letterboxes. The town is then
+   tiled with enough BLOCK_W x BLOCK_H tiles to cover that view (plus a tile of
+   slack), and the view is centred on the middle of the tiled scene. Sizing by
+   screen rather than by tile count matters: choosing "the grid whose aspect
+   best matches" made the zoom jump wildly (one huge tile vs. three small
+   ones) as the container's height changed by a few dozen pixels. */
+function viewFor(pxW, pxH) {
+  const unitsPerPx = Math.max(VIEW_MIN_W / pxW, VIEW_MIN_H / pxH);
+  const w = pxW * unitsPerPx;
+  const h = pxH * unitsPerPx;
+  const cols = Math.ceil(w / BLOCK_W) + 1;
+  const rows = Math.ceil(h / BLOCK_H) + 1;
+  const x = (cols * BLOCK_W - w) / 2;
+  const y = (rows * BLOCK_H - h) / 2;
+  return { cols, rows, viewBox: `${x} ${y} ${w} ${h}` };
 }
 
 export default {
@@ -247,10 +239,11 @@ export default {
 
     const toolbar = el('div', { class: 'drive-toolbar' });
     const wrap = el('div', { class: 'drive-wrap' });
-    wrap.innerHTML = `<svg viewBox="${viewBoxFor(cols, rows)}" class="drive-svg">
+    wrap.innerHTML = `<svg viewBox="0 0 ${cols * BLOCK_W} ${rows * BLOCK_H}" class="drive-svg">
       <g class="drive-scene"></g>
       <g class="drive-rig"></g></svg>`;
-    ctx.stage.append(el('div', { class: 'drive-shell' }, toolbar, wrap));
+    ctx.toolbar.append(toolbar);
+    ctx.stage.append(el('div', { class: 'drive-shell' }, wrap));
 
     const svg = wrap.querySelector('.drive-svg');
     const scene = wrap.querySelector('.drive-scene');
@@ -304,36 +297,43 @@ export default {
       applyTransforms();
     }
 
+    // Puts the vehicle back at rest in the middle of the view. The train is
+    // shifted right by half its own length so the whole thing (engine plus
+    // trailing carriages) starts on screen instead of running off the left.
+    function recenter() {
+      const shift = mode === 'train' ? (CARRIAGE_SPACING * CARRIAGE_COUNT) / 2 - 20 : 0;
+      pos.x = target.x = (cols * BLOCK_W) / 2 + shift;
+      pos.y = target.y = (rows * BLOCK_H) / 2;
+      angle = 0;
+    }
+
     function renderScene() {
       scene.innerHTML = sceneMarkup(mode, cols, rows);
     }
 
     // Re-measures the wrap's actual box (not the viewport — the toolbar and
-    // stage padding both eat into it) and re-solves the grid for it. Fires
+    // stage padding both eat into it) and re-solves the view for it. Fires
     // once on mount via ResizeObserver's guaranteed initial callback (same
     // reasoning as drawing.js's canvas resize — a manual call right after
     // mount can run before layout settles) and again on any rotation/resize.
-    // Bails out when the grid hasn't actually changed so a slow window drag
-    // (many callbacks, same cols/rows) doesn't re-parse the scene markup on
-    // every intermediate frame.
-    let sceneReady = false;
+    // Bails out when the view hasn't actually changed so a slow window drag
+    // doesn't re-parse the scene markup on every intermediate frame.
+    let lastViewBox = '';
     function layoutMap() {
       const rect = wrap.getBoundingClientRect();
       if (!rect.width || !rect.height) return;
-      const grid = bestGrid(rect.width / rect.height);
-      const changed = grid.cols !== cols || grid.rows !== rows;
-      if (!changed && sceneReady) return;
-      cols = grid.cols;
-      rows = grid.rows;
-      svg.setAttribute('viewBox', viewBoxFor(cols, rows));
+      const view = viewFor(rect.width, rect.height);
+      if (view.viewBox === lastViewBox) return;
+      lastViewBox = view.viewBox;
+      cols = view.cols;
+      rows = view.rows;
+      svg.setAttribute('viewBox', view.viewBox);
       renderScene();
-      sceneReady = true;
-      // The tile count just changed size/shape (e.g. a device rotation) —
-      // recentre the vehicle and re-seed the carriage trail rather than
-      // leaving it pointing at coordinates from the old grid, which would
-      // otherwise render the train's carriages disconnected from the engine.
-      pos.x = target.x = (cols * BLOCK_W) / 2;
-      pos.y = target.y = (rows * BLOCK_H) / 2;
+      // The view just changed size/shape (e.g. a device rotation) — recentre
+      // the vehicle and re-seed the carriage trail rather than leaving it
+      // pointing at coordinates from the old view, which would otherwise
+      // render the train's carriages disconnected from the engine.
+      recenter();
       seedTrail();
       applyTransforms();
     }
@@ -412,11 +412,11 @@ export default {
       const row = el('div', { class: 'drive-row' },
         el('button', {
           class: `drive-mode ${mode === 'car' ? 'active' : ''}`, text: 'Car',
-          onclick: () => { mode = 'car'; sfx('tap'); renderToolbar(); renderScene(); rebuildRig(); },
+          onclick: () => { mode = 'car'; sfx('tap'); renderToolbar(); renderScene(); recenter(); rebuildRig(); },
         }),
         el('button', {
           class: `drive-mode ${mode === 'train' ? 'active' : ''}`, text: 'Train',
-          onclick: () => { mode = 'train'; sfx('tap'); renderToolbar(); renderScene(); rebuildRig(); },
+          onclick: () => { mode = 'train'; sfx('tap'); renderToolbar(); renderScene(); recenter(); rebuildRig(); },
         }),
         el('button', {
           class: 'drive-horn', text: 'Honk!',
@@ -436,7 +436,6 @@ export default {
 
     renderToolbar();
     renderScene();
-    sceneReady = true;
     rebuildRig();
   },
 };

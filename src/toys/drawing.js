@@ -48,7 +48,8 @@ export default {
 
     const canvas = el('canvas', { class: 'draw-canvas' });
     const toolbar = el('div', { class: 'draw-toolbar' });
-    ctx.stage.append(el('div', { class: 'draw-wrap' }, toolbar, canvas));
+    ctx.toolbar.append(toolbar);
+    ctx.stage.append(el('div', { class: 'draw-wrap' }, canvas));
 
     const g = canvas.getContext('2d');
 

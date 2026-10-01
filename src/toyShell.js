@@ -23,6 +23,10 @@ export function startToy({ toy, age, mount, onExit }) {
   let cleanups = [];
 
   const bar = topbar({ title: toy.title, onBack: () => exit() });
+  // A slot in the top bar's otherwise-empty right side that a toy can put its
+  // controls into, so the stage below is left entirely to the toy's canvas.
+  const tools = el('div', { class: 'topbar-tools' });
+  bar.node.append(tools);
   const stage = el('div', { class: 'stage toy-stage' });
   mount.replaceChildren(bar.node, stage);
 
@@ -43,9 +47,11 @@ export function startToy({ toy, age, mount, onExit }) {
   const ctx = {
     age,
     stage,
+    toolbar: tools,
     onCleanup(fn) { cleanups.push(fn); },
   };
 
   toy.mount(ctx);
+  if (tools.childNodes.length) bar.node.classList.add('has-tools');
   return { destroy: teardown };
 }
