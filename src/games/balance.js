@@ -1,79 +1,92 @@
-/* Balance Scale — tap the heavier side and watch it tip.
+/* Balance Scale — drag things onto the scale until both sides weigh the same.
 
-   The weight cue is deliberately just "how many" rather than per-object
-   weight (an elephant isn't secretly heavier than an apple here): reusing
-   quantity keeps this readable at age 2 without a lookup table, and the
-   physical intuition — more stuff on a side makes it sink — is exactly
-   what a balance scale teaches regardless of what's actually on it.
+   Each round starts with the scale tipped: one pan holds more than the
+   other. A tray underneath holds spare items; the child drags them onto a
+   pan (or drags ones they added back off again) and the beam swings live
+   with every change, until both pans hold the same number and it settles
+   level. The weight cue is deliberately just "how many" rather than
+   per-object weight (an elephant isn't secretly heavier than an apple
+   here): quantity keeps this readable at age 2 without a lookup table, and
+   the physical intuition — more stuff on a side makes it sink — is exactly
+   what a balance scale teaches regardless of what's on it.
 
-   Left and right counts are always different (re-rolled on a tie), so
-   there's always a single correct pan to tap and no "equal" state to
-   design feedback for — a possible follow-up, not a v1 requirement.
+   No fail state, as everywhere else: piling onto the heavy side just tips
+   it further, and anything the child added can be dragged back to the tray
+   or across to the other pan. Only what the round started with is fixed —
+   otherwise emptying both pans would "balance" it at zero. The tray always
+   holds a few more items than needed, so the answer isn't simply "use all
+   of them".
 
-   The beam genuinely rotates around a fixed fulcrum — an earlier version
-   kept the beam flat and only moved the pans' hanging height, which read
-   as "two floating baskets" rather than an actual tipping scale. Each
-   pan's rope still hangs straight down (plumb) from its own end of the
-   rotated beam, which is physically correct: gravity keeps a hanging pan
-   vertical regardless of the beam's angle, only its attachment point
-   moves with the beam.
-*/
+   The beam genuinely rotates around a fixed fulcrum, eased toward its new
+   angle every frame so a drop visibly tips it. Each pan's rope hangs
+   straight down (plumb) from its own end of the rotated beam, which is
+   physically correct: gravity keeps a hanging pan vertical regardless of
+   the beam's angle, only its attachment point moves with the beam. */
 
 import { el, randInt, range, pick } from '../util.js';
 import { spriteBody, OBJECTS, ANIMALS, PALETTE, shade } from '../art.js';
 
 const COUNTABLE = [...OBJECTS, ...ANIMALS];
 
-/** Max items per side, by age — the difficulty knob is purely "how much
- *  can a child subitise/count at a glance", same as Counting's own scale. */
-const MAX_ITEMS = { 2: 3, 3: 4, 4: 6, 5: 8 };
+/** Most items a pan starts with, and how many spare items the tray holds
+ *  beyond what balancing actually needs, by age. */
+const CONFIG = {
+  2: { max: 3, extra: 1 },
+  3: { max: 4, extra: 2 },
+  4: { max: 6, extra: 2 },
+  5: { max: 8, extra: 3 },
+};
 
-const FULCRUM = { x: 150, y: 64 };
-const BEAM_HALF = 86;
+const VB_W = 300;
+const VB_H = 262;
+const FULCRUM = { x: 150, y: 56 };
+const BEAM_HALF = 92;
 const ROPE_LEN = 46;
 const ANGLE_PER_ITEM = 0.055; // radians
 const MAX_ANGLE = 0.32;       // ~18 degrees
-const PAN_W = 74;
-const PAN_H = 50;
+const PAN_W = 80;
+const DROP_R = 58;            // generous drop radius around a pan's centre
+const TRAY = { x: 14, y: 204, w: 272, h: 50 };
+const TRAY_ITEM = 38;
 
-/** A small grid of sprites inside a pan's own local coordinate space
- *  (centred on 0,0), wrapping to a second row once 5+ items don't fit
- *  comfortably in one — mirrors the cols/rows logic Counting's groupSvg()
- *  uses, just against a fixed pan size instead of a viewBox that grows
- *  with the count. */
-function panContents(sprite, n, colors) {
-  const cols = Math.min(n, 4);
-  const rows = Math.ceil(n / cols);
-  const cellW = PAN_W / cols;
-  const cellH = PAN_H / rows;
-  const size = Math.min(cellW, cellH) * 0.92;
-  const cells = range(n).map((i) => {
-    const col = i % cols;
-    const row = Math.floor(i / cols);
-    const x = col * cellW + cellW / 2 - size / 2 - PAN_W / 2;
-    const y = row * cellH + cellH / 2 - size / 2 - PAN_H / 2 + 2;
-    return `<svg x="${x}" y="${y}" width="${size}" height="${size}" viewBox="0 0 100 100">
-              ${spriteBody(sprite, colors[i % colors.length])}
+/** Items piled in a pan, in the pan's own local coordinates (centred on
+ *  0,0): rows of up to PILE_COLS from the pan's floor upward, every item
+ *  the same size. Same size matters — shrinking items to fit would make one
+ *  big lion look heavier than three small ones, the opposite of the lesson.
+ *  Items the child added carry data attributes so they can be dragged off. */
+const ITEM = 20;
+const PILE_COLS = 4;
+function panContents(items, side) {
+  return items.map((it, i) => {
+    const row = Math.floor(i / PILE_COLS);
+    const inRow = Math.min(PILE_COLS, items.length - row * PILE_COLS);
+    const col = i % PILE_COLS;
+    const x = (col - (inRow - 1) / 2) * ITEM * 1.02 - ITEM / 2;
+    const y = 13 - row * ITEM * 0.9 - ITEM / 2;
+    const drag = it.added ? `data-src="${side}" data-id="${it.id}" style="cursor:grab"` : '';
+    return `<svg x="${x}" y="${y}" width="${ITEM}" height="${ITEM}" viewBox="0 0 100 100" ${drag}>
+              ${it.added ? '<rect width="100" height="100" fill="transparent"/>' : ''}
+              ${spriteBody(it.sprite, it.color)}
             </svg>`;
   }).join('');
-  return cells;
 }
 
-function panMarkup(cx, cy, sprite, n, colors, side) {
+function panMarkup(cx, cy, items, side, glow) {
   return `
-    <g class="pan" data-side="${side}" transform="translate(${cx},${cy})">
-      <path d="M-38 -8 L38 -8 L30 24 Q0 32 -30 24 Z" fill="#fff9f2"
+    <g transform="translate(${cx},${cy})">
+      ${glow ? `<ellipse cx="0" cy="4" rx="${PAN_W / 2 + 10}" ry="34" fill="#ffe08a" opacity=".55"/>` : ''}
+      <path d="M-42 -6 L42 -6 L33 26 Q0 34 -33 26 Z" fill="#fff9f2"
             stroke="#c9c2da" stroke-width="3" stroke-linejoin="round"/>
-      ${panContents(sprite, n, colors)}
+      ${panContents(items, side)}
     </g>`;
 }
 
 export default {
   id: 'balance',
   title: 'Balance Scale',
-  subtitle: 'Heavier or lighter?',
+  subtitle: 'Make it balance',
   color: '#5ec8d8',
-  rounds: () => 6,
+  rounds: () => 5,
 
   icon: () => `<svg viewBox="0 0 100 100" aria-hidden="true">
       <rect x="46" y="8" width="8" height="66" rx="4" fill="#8a869c"/>
@@ -84,57 +97,180 @@ export default {
     </svg>`,
 
   round(ctx) {
-    const max = MAX_ITEMS[ctx.age];
+    const cfg = CONFIG[ctx.age];
     const sprite = pick(COUNTABLE);
     const base = pick(PALETTE);
     const colors = [base, shade(base, 30), shade(base, -25)];
+    let nextId = 0;
+    const make = (added) => ({ id: nextId++, sprite, color: colors[nextId % colors.length], added });
 
-    let left = randInt(1, max);
-    let right = randInt(1, max);
-    while (right === left) right = randInt(1, max);
-    const answer = left > right ? 'left' : 'right';
+    let leftStart = randInt(1, cfg.max);
+    let rightStart = randInt(1, cfg.max);
+    while (rightStart === leftStart) rightStart = randInt(1, cfg.max);
 
-    ctx.prompt('Which side is heavier?');
-
-    // Positive angle here rotates the LEFT end down: the beam is drawn from
-    // (cos, sin) offsets around the fulcrum, and a heavier left side should
-    // sink, so the sign is tied to (left - right), not (right - left).
-    const angle = Math.max(-MAX_ANGLE, Math.min(MAX_ANGLE, (left - right) * ANGLE_PER_ITEM));
-    const leftEnd = {
-      x: FULCRUM.x - BEAM_HALF * Math.cos(angle),
-      y: FULCRUM.y + BEAM_HALF * Math.sin(angle),
+    const pans = {
+      left: range(leftStart).map(() => make(false)),
+      right: range(rightStart).map(() => make(false)),
     };
-    const rightEnd = {
-      x: FULCRUM.x + BEAM_HALF * Math.cos(angle),
-      y: FULCRUM.y - BEAM_HALF * Math.sin(angle),
-    };
-    const leftPan = { x: leftEnd.x, y: leftEnd.y + ROPE_LEN };
-    const rightPan = { x: rightEnd.x, y: rightEnd.y + ROPE_LEN };
+    let tray = range(Math.abs(leftStart - rightStart) + cfg.extra).map(() => make(true));
+
+    ctx.prompt('Make it balance!');
 
     const wrap = el('div', { class: 'stage-figure' });
-    wrap.innerHTML = `
-      <svg viewBox="0 0 300 200" style="width:100%;height:100%" class="balance-svg">
-        <path d="M150 190 L128 190 L150 ${FULCRUM.y} L172 190 Z" fill="#e8e3f2"/>
-        <circle cx="${FULCRUM.x}" cy="${FULCRUM.y}" r="6" fill="#8a869c"/>
-        <line x1="${leftEnd.x}" y1="${leftEnd.y}" x2="${rightEnd.x}" y2="${rightEnd.y}"
-              stroke="#c9c2da" stroke-width="10" stroke-linecap="round"/>
-        <line x1="${leftEnd.x}" y1="${leftEnd.y}" x2="${leftPan.x}" y2="${leftPan.y}"
-              stroke="#8a869c" stroke-width="3"/>
-        <line x1="${rightEnd.x}" y1="${rightEnd.y}" x2="${rightPan.x}" y2="${rightPan.y}"
-              stroke="#8a869c" stroke-width="3"/>
-        ${panMarkup(leftPan.x, leftPan.y, sprite, left, colors, 'left')}
-        ${panMarkup(rightPan.x, rightPan.y, sprite, right, colors, 'right')}
+    wrap.innerHTML = `<svg viewBox="0 0 ${VB_W} ${VB_H}" style="width:100%;height:100%" class="balance-svg">
+        <g class="balance-scene"></g>
+        <g class="balance-drag"></g>
       </svg>`;
     ctx.stage.append(wrap);
-
     const svg = wrap.querySelector('svg');
-    const onTap = (e) => {
-      const pan = e.target.closest('.pan');
-      if (!pan) return;
-      if (pan.dataset.side === answer) ctx.win(pan);
-      else ctx.nudge(pan);
+    const scene = svg.querySelector('.balance-scene');
+    const dragLayer = svg.querySelector('.balance-drag');
+
+    const targetAngle = () => {
+      const diff = pans.left.length - pans.right.length;
+      // Positive angle rotates the LEFT end down: a heavier left sinks.
+      return Math.max(-MAX_ANGLE, Math.min(MAX_ANGLE, diff * ANGLE_PER_ITEM));
     };
-    svg.addEventListener('click', onTap);
-    ctx.onCleanup(() => svg.removeEventListener('click', onTap));
+    let angle = targetAngle();
+    let solved = false;
+    let drag = null;       // { item, from, x, y }
+    let hoverSide = null;
+    let rafId = null;
+
+    function geometry() {
+      const leftEnd = { x: FULCRUM.x - BEAM_HALF * Math.cos(angle), y: FULCRUM.y + BEAM_HALF * Math.sin(angle) };
+      const rightEnd = { x: FULCRUM.x + BEAM_HALF * Math.cos(angle), y: FULCRUM.y - BEAM_HALF * Math.sin(angle) };
+      return {
+        leftEnd, rightEnd,
+        left: { x: leftEnd.x, y: leftEnd.y + ROPE_LEN },
+        right: { x: rightEnd.x, y: rightEnd.y + ROPE_LEN },
+      };
+    }
+
+    function trayMarkup() {
+      const n = tray.length;
+      const gap = n ? Math.min(TRAY_ITEM + 6, (TRAY.w - 16) / n) : 0;
+      const start = TRAY.x + TRAY.w / 2 - (gap * n) / 2 + gap / 2;
+      return `
+        <rect x="${TRAY.x}" y="${TRAY.y}" width="${TRAY.w}" height="${TRAY.h}" rx="16"
+              fill="${hoverSide === 'tray' ? '#ffe08a' : '#f1edf8'}" stroke="#ded8ea" stroke-width="3"/>
+        ${tray.map((it, i) => `
+          <svg x="${start + gap * i - TRAY_ITEM / 2}" y="${TRAY.y + (TRAY.h - TRAY_ITEM) / 2}"
+               width="${TRAY_ITEM}" height="${TRAY_ITEM}" viewBox="0 0 100 100"
+               data-src="tray" data-id="${it.id}" style="cursor:grab">
+            <rect width="100" height="100" fill="transparent"/>
+            ${spriteBody(it.sprite, it.color)}
+          </svg>`).join('')}`;
+    }
+
+    function paint() {
+      const g = geometry();
+      const level = Math.abs(angle) < 0.004 && solved;
+      scene.innerHTML = `
+        <path d="M150 196 L126 196 L150 ${FULCRUM.y} L174 196 Z" fill="#e8e3f2"/>
+        <line x1="${g.leftEnd.x}" y1="${g.leftEnd.y}" x2="${g.rightEnd.x}" y2="${g.rightEnd.y}"
+              stroke="${level ? '#3fbf7f' : '#c9c2da'}" stroke-width="10" stroke-linecap="round"/>
+        <circle cx="${FULCRUM.x}" cy="${FULCRUM.y}" r="7" fill="#8a869c"/>
+        <line x1="${g.leftEnd.x}" y1="${g.leftEnd.y}" x2="${g.left.x}" y2="${g.left.y}" stroke="#8a869c" stroke-width="3"/>
+        <line x1="${g.rightEnd.x}" y1="${g.rightEnd.y}" x2="${g.right.x}" y2="${g.right.y}" stroke="#8a869c" stroke-width="3"/>
+        ${panMarkup(g.left.x, g.left.y, pans.left, 'left', hoverSide === 'left')}
+        ${panMarkup(g.right.x, g.right.y, pans.right, 'right', hoverSide === 'right')}
+        ${trayMarkup()}`;
+      dragLayer.innerHTML = drag
+        ? `<svg x="${drag.x - 24}" y="${drag.y - 24}" width="48" height="48" viewBox="0 0 100 100"
+                style="pointer-events:none">${spriteBody(drag.item.sprite, drag.item.color)}</svg>`
+        : '';
+    }
+
+    // Eases the beam toward the angle the current counts call for, so a
+    // drop visibly tips (or levels) the scale instead of snapping.
+    function animate() {
+      const target = solved ? 0 : targetAngle();
+      angle += (target - angle) * 0.18;
+      if (Math.abs(target - angle) < 0.002) angle = target;
+      paint();
+      rafId = angle === target ? null : requestAnimationFrame(animate);
+    }
+    const kick = () => { if (!rafId) rafId = requestAnimationFrame(animate); };
+
+    const toSvgPoint = (e) => {
+      const m = svg.getScreenCTM();
+      if (!m) return { x: 0, y: 0 };
+      const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse());
+      return { x: p.x, y: p.y };
+    };
+
+    function dropTarget(p) {
+      const g = geometry();
+      const dl = Math.hypot(p.x - g.left.x, p.y - g.left.y);
+      const dr = Math.hypot(p.x - g.right.x, p.y - g.right.y);
+      if (Math.min(dl, dr) <= DROP_R) return dl <= dr ? 'left' : 'right';
+      if (p.y >= TRAY.y - 20) return 'tray';
+      return null;
+    }
+
+    function onDown(e) {
+      if (solved) return;
+      const src = e.target.closest('[data-src]');
+      if (!src) return;
+      const from = src.dataset.src;
+      const id = Number(src.dataset.id);
+      const list = from === 'tray' ? tray : pans[from];
+      const item = list.find((it) => it.id === id);
+      if (!item) return;
+      // Lift it out of where it was; it goes back there if dropped nowhere.
+      if (from === 'tray') tray = tray.filter((it) => it !== item);
+      else pans[from] = pans[from].filter((it) => it !== item);
+      const p = toSvgPoint(e);
+      drag = { item, from, x: p.x, y: p.y };
+      try { svg.setPointerCapture(e.pointerId); } catch { /* not fatal */ }
+      ctx.sfx('tap');
+      kick();
+      paint();
+      e.preventDefault();
+    }
+
+    function onMove(e) {
+      if (!drag) return;
+      const p = toSvgPoint(e);
+      drag.x = p.x;
+      drag.y = p.y;
+      hoverSide = dropTarget(p);
+      paint();
+      e.preventDefault();
+    }
+
+    function onUp(e) {
+      if (!drag) return;
+      const where = dropTarget(toSvgPoint(e)) || drag.from;
+      if (where === 'tray') tray.push(drag.item);
+      else pans[where].push(drag.item);
+      drag = null;
+      hoverSide = null;
+
+      const added = pans.left.some((it) => it.added) || pans.right.some((it) => it.added);
+      if (added && pans.left.length === pans.right.length) {
+        solved = true;
+        ctx.win(wrap);
+      } else if (where !== 'tray') {
+        ctx.sfx('tap');
+      }
+      kick();
+      paint();
+    }
+
+    svg.addEventListener('pointerdown', onDown);
+    svg.addEventListener('pointermove', onMove);
+    svg.addEventListener('pointerup', onUp);
+    svg.addEventListener('pointercancel', onUp);
+    ctx.onCleanup(() => {
+      svg.removeEventListener('pointerdown', onDown);
+      svg.removeEventListener('pointermove', onMove);
+      svg.removeEventListener('pointerup', onUp);
+      svg.removeEventListener('pointercancel', onUp);
+      if (rafId) cancelAnimationFrame(rafId);
+    });
+
+    paint();
   },
 };
