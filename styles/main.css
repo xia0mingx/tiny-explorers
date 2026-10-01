@@ -378,6 +378,15 @@ svg { display: block; overflow: visible; }
 }
 .stage-figure > svg { max-width: 100%; max-height: 100%; }
 
+/* Sort It baskets: outline thickens under a dragged item, and pulses on
+   the right basket after a wrong drop (see src/games/sortIt.js). */
+.sort-bin .bin-outline { transition: stroke-width .12s; }
+.sort-bin.is-hot .bin-outline { stroke-width: 7; }
+.sort-bin.is-hint .bin-outline { animation: sort-hint .5s ease-in-out 2; }
+@keyframes sort-hint {
+  50% { stroke-width: 9; }
+}
+
 .float { animation: float 3s ease-in-out infinite; }
 @keyframes float {
   0%,100% { transform: translateY(0); }
