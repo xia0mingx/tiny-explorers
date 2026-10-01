@@ -33,8 +33,8 @@ const VEHICLE_SCALE = 1.8;  // engine/carriages drawn at this scale so they read
 // The view always covers at least this much of the town (in map units), whatever
 // the screen shape — so zoom is the same on every device and the 4-carriage
 // train always fits across the screen.
-const VIEW_MIN_W = 520;
-const VIEW_MIN_H = 340;
+const VIEW_MIN_W = 700;
+const VIEW_MIN_H = 460;
 const CARRIAGE_COUNT = 4;
 // Arc-length gap behind the engine per carriage — a touch more than a
 // carriage's own on-screen width (44 units * VEHICLE_SCALE) so each one is
