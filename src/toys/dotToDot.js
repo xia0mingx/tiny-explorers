@@ -26,7 +26,7 @@
    continuously across groups, but each group's line is drawn and closed on
    its own, so nothing drags a stray line across the middle of the shape. */
 
-import { el, noRepeatPicker, pick } from '../util.js';
+import { el, noRepeatPicker, pick, leadFinger } from '../util.js';
 import { SHAPE_OUTLINE, OUTLINE_SHAPES_BY_AGE, PALETTE, shade } from '../art.js';
 import { sfx, sayAuto } from '../audio.js';
 
@@ -123,7 +123,9 @@ export default {
     let color;
     let shapeId;
     let finished;
-    let dragging = false;
+    // Which touch connects dots and drags the band — a resting palm
+    // neither blocks the real finger nor joins dots itself (see util.js).
+    const finger = leadFinger();
     let roundTimer = null;
 
     function sampleShape(id) {
@@ -327,7 +329,7 @@ export default {
     }
 
     function updateBand(p) {
-      const a = dragging ? bandAnchor() : null;
+      const a = finger.active ? bandAnchor() : null;
       if (!a || !p) { band.setAttribute('opacity', '0'); return; }
       band.setAttribute('x1', a.x);
       band.setAttribute('y1', a.y);
@@ -365,7 +367,7 @@ export default {
 
     function finish() {
       finished = true;
-      dragging = false;
+      finger.reset();
       updateBand(null);
       sfx('sparkle');
       svg.classList.add('finished');
@@ -380,9 +382,9 @@ export default {
     function onDown(e) {
       if (finished) return;
       const p = toSvgPoint(e);
-      dragging = true;
       try { svg.setPointerCapture(e.pointerId); } catch { /* not fatal */ }
       e.preventDefault();
+      if (!finger.down(e)) return;
 
       if (dist(p, dots[nextIdx]) <= HIT_R) {
         connectNext();
@@ -402,16 +404,15 @@ export default {
     }
 
     function onMove(e) {
-      if (!dragging || finished) return;
+      if (finished || !finger.move(e)) return;
       const p = toSvgPoint(e);
       if (dist(p, dots[nextIdx]) <= HIT_R * 0.75) connectNext();
       if (!finished) updateBand(p);
       e.preventDefault();
     }
 
-    function onUp() {
-      dragging = false;
-      if (band) updateBand(null);
+    function onUp(e) {
+      if (finger.up(e) && band) updateBand(null);
     }
 
     function newRound() {
@@ -420,7 +421,7 @@ export default {
       color = pick(PALETTE);
       nextIdx = 0;
       finished = false;
-      dragging = false;
+      finger.reset();
       ({ dots, groupStart, groupSize, face } = sampleShape(shapeId));
       render();
     }

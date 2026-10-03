@@ -115,32 +115,34 @@ export default {
       return { x: e.clientX - rect.left, y: e.clientY - rect.top };
     };
 
-    let drawing = false;
-    let last = null;
+    // pointerId -> that finger's last point. Every finger paints its own
+    // line, so a palm on the glass can't make strokes jump between fingers
+    // or end the real one when it lifts.
+    const lasts = new Map();
 
     function onDown(e) {
-      drawing = true;
       const p = localPoint(e);
-      last = p;
+      lasts.set(e.pointerId, p);
       if (mode === 'stamp') stampAt(p.x, p.y);
       else dot(p);
       e.preventDefault();
     }
 
     function onMove(e) {
-      if (!drawing) return;
+      const last = lasts.get(e.pointerId);
+      if (!last) return;
       const p = localPoint(e);
       if (mode === 'stamp') {
         // Throttle by distance so a drag stamps a trail rather than a blob.
-        if (Math.hypot(p.x - last.x, p.y - last.y) > 34) { stampAt(p.x, p.y); last = p; }
+        if (Math.hypot(p.x - last.x, p.y - last.y) > 34) { stampAt(p.x, p.y); lasts.set(e.pointerId, p); }
       } else {
         line(last, p);
-        last = p;
+        lasts.set(e.pointerId, p);
       }
       e.preventDefault();
     }
 
-    const onUp = () => { drawing = false; };
+    const onUp = (e) => { lasts.delete(e.pointerId); };
 
     canvas.addEventListener('pointerdown', onDown);
     canvas.addEventListener('pointermove', onMove);

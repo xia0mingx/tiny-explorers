@@ -21,7 +21,7 @@
    easing: a placed sticker should follow the finger directly, not chase it.
 */
 
-import { el, pick } from '../util.js';
+import { el, pick, leadFinger } from '../util.js';
 import { spriteBody, glyph, BUDDIES, ACCESSORY, ACCESSORY_IDS, OUTFIT, OUTFIT_IDS, PALETTE } from '../art.js';
 import { sfx } from '../audio.js';
 
@@ -186,7 +186,7 @@ export default {
 
       const svg = sceneWrap.querySelector('.dressup-scene-svg');
       const charEl = sceneWrap.querySelector('.dressup-character');
-      let dragging = false;
+      const finger = leadFinger(); // which touch the friend follows (see util.js)
 
       const toSvgPoint = (e) => {
         const m = svg.getScreenCTM();
@@ -201,17 +201,18 @@ export default {
       }
 
       function onDown(e) {
-        dragging = true;
+        e.preventDefault();
+        if (!finger.down(e)) return;
         moveTo(toSvgPoint(e));
         try { svg.setPointerCapture(e.pointerId); } catch { /* not fatal */ }
         e.preventDefault();
       }
       function onMove(e) {
-        if (!dragging) return;
+        if (!finger.move(e)) return;
         moveTo(toSvgPoint(e));
         e.preventDefault();
       }
-      const onUp = () => { dragging = false; };
+      const onUp = (e) => { finger.up(e); };
 
       svg.addEventListener('pointerdown', onDown);
       svg.addEventListener('pointermove', onMove);

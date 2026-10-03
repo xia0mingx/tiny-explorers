@@ -197,7 +197,10 @@ export default {
     paintTray();
     paintSlots();
 
-    let grabbed = null; // index of the item currently being dragged
+    // pointerId -> index of the item that finger is carrying. One entry per
+    // finger, so a palm resting elsewhere (or a second hand) neither moves
+    // nor drops the item the child is actually dragging.
+    const grabbed = new Map();
 
     const toSvgPoint = (e) => {
       const m = svg.getScreenCTM();
@@ -216,23 +219,27 @@ export default {
     const onDown = (e) => {
       const g = e.target.closest('[data-idx]');
       if (!g) return;
-      grabbed = Number(g.dataset.idx);
+      const idx = Number(g.dataset.idx);
+      if ([...grabbed.values()].includes(idx)) return; // already in another finger
+      grabbed.set(e.pointerId, idx);
       try { svg.setPointerCapture(e.pointerId); } catch { /* not fatal */ }
       e.preventDefault();
     };
 
     const onMove = (e) => {
-      if (grabbed === null) return;
-      items[grabbed].pos = toSvgPoint(e);
-      setHot(binAt(items[grabbed].pos));
+      const idx = grabbed.get(e.pointerId);
+      if (idx === undefined) return;
+      items[idx].pos = toSvgPoint(e);
+      setHot(binAt(items[idx].pos));
       paintTray();
       e.preventDefault();
     };
 
-    const onUp = () => {
-      if (grabbed === null) return;
-      const it = items[grabbed];
-      grabbed = null;
+    const onUp = (e) => {
+      const idx = grabbed.get(e.pointerId);
+      if (idx === undefined) return;
+      const it = items[idx];
+      grabbed.delete(e.pointerId);
       setHot(null);
       const drop = binAt(it.pos);
 

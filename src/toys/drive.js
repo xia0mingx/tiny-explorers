@@ -21,7 +21,7 @@
    it's speeding across the map or gliding to a stop.
 */
 
-import { el, pick } from '../util.js';
+import { el, pick, leadFinger } from '../util.js';
 import { PALETTE, shade } from '../art.js';
 import { sfx } from '../audio.js';
 
@@ -227,7 +227,7 @@ export default {
     const pos = { x: (cols * BLOCK_W) / 2, y: (rows * BLOCK_H) / 2 };
     const target = { ...pos };
     let angle = 0;
-    let dragging = false;
+    const finger = leadFinger(); // which touch the car follows (see util.js)
     let rafId = null;
     const history = [];
     // Passengers are rolled once per visit, not per rebuildRig(), so picking a
@@ -356,7 +356,7 @@ export default {
 
       applyTransforms();
 
-      if (dragging || Math.hypot(dx, dy) > STOP_THRESHOLD) {
+      if (finger.active || Math.hypot(dx, dy) > STOP_THRESHOLD) {
         rafId = requestAnimationFrame(frame);
       } else {
         rafId = null;
@@ -371,24 +371,27 @@ export default {
     };
 
     function onDown(e) {
-      dragging = true;
+      e.preventDefault();
+      if (!finger.down(e)) return;
       const p = toSvgPoint(e);
       target.x = p.x;
       target.y = p.y;
       try { svg.setPointerCapture(e.pointerId); } catch { /* not fatal */ }
       if (!rafId) rafId = requestAnimationFrame(frame);
-      e.preventDefault();
     }
 
     function onMove(e) {
-      if (!dragging) return;
+      if (!finger.move(e)) return;
       const p = toSvgPoint(e);
       target.x = p.x;
       target.y = p.y;
+      // The animation may have parked if a finger took the lead from one
+      // that had stopped.
+      if (!rafId) rafId = requestAnimationFrame(frame);
       e.preventDefault();
     }
 
-    const onUp = () => { dragging = false; };
+    const onUp = (e) => { finger.up(e); };
 
     svg.addEventListener('pointerdown', onDown);
     svg.addEventListener('pointermove', onMove);

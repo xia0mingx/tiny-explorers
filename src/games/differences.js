@@ -16,7 +16,7 @@
    why taps are accepted on either panel.
 */
 
-import { el, pick, shuffle, sample, range } from '../util.js';
+import { el, pick, shuffle, sample, range, onTap as tap } from '../util.js';
 import { spriteBody, PALETTE, EXPRESSIVE } from '../art.js';
 
 /* 'expression' sits right after 'recolor' rather than at the end: like
@@ -197,8 +197,8 @@ export default {
       else { ctx.ping(); say(); }
     };
 
-    left.addEventListener('click', onTap);
-    rightPanel.addEventListener('click', onTap);
+    tap(left, onTap);
+    tap(rightPanel, onTap);
 
     say();
     ctx.stage.append(el('div', { class: 'diff-panels' }, left, rightPanel));

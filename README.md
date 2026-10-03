@@ -315,6 +315,16 @@ no Pillow). PNGs are needed because iPadOS's "Add to Home Screen" reads
   zoom doesn't jump. (An earlier `bestGrid()` picked whichever tile grid's
   aspect best matched the container, which swung between one huge tile and
   several small ones as the available height shifted by a few dozen pixels.)
+- **Every input has to survive a second touch.** Toddlers rest a palm on the
+  glass or grip the iPad by its face, and iPadOS doesn't fire `click` for a
+  tap made while any other touch is down — so buttons never use `click`
+  directly: `el()`'s `onclick` goes through `onTap()` in `src/util.js`, which
+  fires on that finger's own `pointerup`. Drags never keep a single
+  `dragging` flag either (a stray finger's moves would hijack it and its
+  lift would end the real drag): either key state by `e.pointerId` (Sort
+  It, Balance, Drawing, Gears — each finger carries its own thing) or, for
+  a single target like Drive's car, use `leadFinger()` from `src/util.js`,
+  which follows whichever finger is actually moving.
 - No test suite. Verification so far has been done by driving the real app in a
   browser; if this grows, the pure logic worth testing first is maze generation,
   pattern sequencing, and the tracing waypoint advance.

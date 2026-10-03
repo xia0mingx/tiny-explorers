@@ -143,7 +143,10 @@ export default {
     };
 
     let reached = 0;
-    let dragging = false;
+    // The finger doing the drag. Only its moves count and only its lift ends
+    // the drag, so a palm or second finger elsewhere on the glass can't
+    // steal or cancel it; a new touch that qualifies (on the hero) takes over.
+    let owner = null;
     let done = false;
 
     const toSvg = (e) => {
@@ -164,7 +167,7 @@ export default {
       // Resume from wherever the last drag ended — including the start dot on
       // the first touch, since `reached` is 0 then.
       if (dist(p, pts[reached]) > TOL * 1.6) return;
-      dragging = true;
+      owner = e.pointerId;
       // Capture keeps the drag alive when the finger leaves the element. It
       // throws if the pointer is no longer active (a race on fast lifts), which
       // must not abort the drag we just started.
@@ -173,7 +176,7 @@ export default {
     };
 
     const onMove = (e) => {
-      if (!dragging || done) return;
+      if (e.pointerId !== owner || done) return;
       e.preventDefault();
       const p = toSvg(e);
       const limit = Math.min(reached + LOOKAHEAD, SAMPLES);
@@ -189,7 +192,7 @@ export default {
 
       if (reached / SAMPLES >= WIN_AT) {
         done = true;
-        dragging = false;
+        owner = null;
         reached = SAMPLES;
         paint();
         wrap.querySelector('.start').innerHTML = '';
@@ -197,7 +200,7 @@ export default {
       }
     };
 
-    const onUp = () => { dragging = false; };
+    const onUp = (e) => { if (e.pointerId === owner) owner = null; };
 
     svg.addEventListener('pointerdown', onDown);
     svg.addEventListener('pointermove', onMove);
