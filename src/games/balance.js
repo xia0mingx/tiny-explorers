@@ -133,8 +133,10 @@ export default {
     };
     let angle = targetAngle();
     let solved = false;
-    let drag = null;       // { item, from, x, y }
-    let hoverSide = null;
+    // pointerId -> { item, from, x, y, hover }: one drag per finger, so a
+    // palm resting on the glass can't move or drop the item being carried.
+    const drags = new Map();
+    const hovering = (side) => [...drags.values()].some((d) => d.hover === side);
     let rafId = null;
 
     function geometry() {
@@ -153,7 +155,7 @@ export default {
       const start = TRAY.x + TRAY.w / 2 - (gap * n) / 2 + gap / 2;
       return `
         <rect x="${TRAY.x}" y="${TRAY.y}" width="${TRAY.w}" height="${TRAY.h}" rx="16"
-              fill="${hoverSide === 'tray' ? '#ffe08a' : '#f1edf8'}" stroke="#ded8ea" stroke-width="3"/>
+              fill="${hovering('tray') ? '#ffe08a' : '#f1edf8'}" stroke="#ded8ea" stroke-width="3"/>
         ${tray.map((it, i) => `
           <svg x="${start + gap * i - TRAY_ITEM / 2}" y="${TRAY.y + (TRAY.h - TRAY_ITEM) / 2}"
                width="${TRAY_ITEM}" height="${TRAY_ITEM}" viewBox="0 0 100 100"
@@ -173,13 +175,12 @@ export default {
         <circle cx="${FULCRUM.x}" cy="${FULCRUM.y}" r="7" fill="#8a869c"/>
         <line x1="${g.leftEnd.x}" y1="${g.leftEnd.y}" x2="${g.left.x}" y2="${g.left.y}" stroke="#8a869c" stroke-width="3"/>
         <line x1="${g.rightEnd.x}" y1="${g.rightEnd.y}" x2="${g.right.x}" y2="${g.right.y}" stroke="#8a869c" stroke-width="3"/>
-        ${panMarkup(g.left.x, g.left.y, pans.left, 'left', hoverSide === 'left')}
-        ${panMarkup(g.right.x, g.right.y, pans.right, 'right', hoverSide === 'right')}
+        ${panMarkup(g.left.x, g.left.y, pans.left, 'left', hovering('left'))}
+        ${panMarkup(g.right.x, g.right.y, pans.right, 'right', hovering('right'))}
         ${trayMarkup()}`;
-      dragLayer.innerHTML = drag
-        ? `<svg x="${drag.x - 24}" y="${drag.y - 24}" width="48" height="48" viewBox="0 0 100 100"
-                style="pointer-events:none">${spriteBody(drag.item.sprite, drag.item.color)}</svg>`
-        : '';
+      dragLayer.innerHTML = [...drags.values()].map((d) =>
+        `<svg x="${d.x - 24}" y="${d.y - 24}" width="48" height="48" viewBox="0 0 100 100"
+              style="pointer-events:none">${spriteBody(d.item.sprite, d.item.color)}</svg>`).join('');
     }
 
     // Eases the beam toward the angle the current counts call for, so a
@@ -222,7 +223,7 @@ export default {
       if (from === 'tray') tray = tray.filter((it) => it !== item);
       else pans[from] = pans[from].filter((it) => it !== item);
       const p = toSvgPoint(e);
-      drag = { item, from, x: p.x, y: p.y };
+      drags.set(e.pointerId, { item, from, x: p.x, y: p.y, hover: null });
       try { svg.setPointerCapture(e.pointerId); } catch { /* not fatal */ }
       ctx.sfx('tap');
       kick();
@@ -231,25 +232,28 @@ export default {
     }
 
     function onMove(e) {
+      const drag = drags.get(e.pointerId);
       if (!drag) return;
       const p = toSvgPoint(e);
       drag.x = p.x;
       drag.y = p.y;
-      hoverSide = dropTarget(p);
+      drag.hover = dropTarget(p);
       paint();
       e.preventDefault();
     }
 
     function onUp(e) {
+      const drag = drags.get(e.pointerId);
       if (!drag) return;
       const where = dropTarget(toSvgPoint(e)) || drag.from;
       if (where === 'tray') tray.push(drag.item);
       else pans[where].push(drag.item);
-      drag = null;
-      hoverSide = null;
+      drags.delete(e.pointerId);
 
       const added = pans.left.some((it) => it.added) || pans.right.some((it) => it.added);
-      if (added && pans.left.length === pans.right.length) {
+      // Not while another finger is still carrying something — that item
+      // would be left hanging in mid-air over a "solved" scale.
+      if (added && drags.size === 0 && pans.left.length === pans.right.length) {
         solved = true;
         ctx.win(wrap);
       } else if (where !== 'tray') {

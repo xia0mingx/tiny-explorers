@@ -26,7 +26,7 @@
    tunnel are found from the track itself (where it passes over the river;
    a river-free stretch for the hill), so they work on drawn tracks too. */
 
-import { el, pick, randInt } from '../util.js';
+import { el, pick, randInt, leadFinger } from '../util.js';
 import { PALETTE, shade, spriteBody } from '../art.js';
 import { sfx } from '../audio.js';
 
@@ -290,6 +290,7 @@ export default {
     let lastAspect = 0;
     let drawing = false;     // Draw mode: the next finger stroke becomes the track
     let stroke = null;       // points of the stroke in progress
+    const finger = leadFinger(); // which touch is drawing (see util.js)
 
     const toolbar = el('div', { class: 'drive-toolbar' });
     const wrap = el('div', { class: 'trainset-wrap' });
@@ -462,6 +463,7 @@ export default {
     function setDrawing(on) {
       drawing = on;
       stroke = null;
+      finger.reset();
       svg.classList.toggle('drawing', on);
       drawG.innerHTML = on
         ? `<rect width="${w}" height="${h}" fill="#fff" opacity=".35"/>
@@ -505,9 +507,11 @@ export default {
       const p = toMap(e);
       if (!p) return;
       if (drawing) {
-        stroke = [p];
-        try { svg.setPointerCapture(e.pointerId); } catch { /* not fatal */ }
         e.preventDefault();
+        try { svg.setPointerCapture(e.pointerId); } catch { /* not fatal */ }
+        // A touch that takes the lead (e.g. the finger after a resting
+        // palm) starts the stroke afresh from where it landed.
+        if (finger.down(e)) stroke = [p];
         return;
       }
       // Tapping anywhere on the train (not just the engine) toots — a
@@ -518,7 +522,11 @@ export default {
 
     function onMove(e) {
       if (!drawing || !stroke) return;
+      const wasLead = finger.isLead(e);
+      if (!finger.move(e)) return;
       const p = toMap(e);
+      // Another finger just took over by moving: its stroke starts here.
+      if (!wasLead && p) stroke = [p];
       const last = stroke[stroke.length - 1];
       if (p && Math.hypot(p.x - last.x, p.y - last.y) >= 6) {
         stroke.push(p);
@@ -527,8 +535,8 @@ export default {
       e.preventDefault();
     }
 
-    function onUp() {
-      if (drawing && stroke) finishStroke();
+    function onUp(e) {
+      if (finger.up(e) && drawing && stroke) finishStroke();
     }
 
     svg.addEventListener('pointerdown', onDown);

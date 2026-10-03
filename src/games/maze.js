@@ -124,7 +124,10 @@ export default {
             viewBox="0 0 100 100" class="pulse">${spriteBody('star', '#ffc93c')}</svg>`;
 
     let path = [[0, 0]];
-    let dragging = false;
+    // The finger doing the drag. Only its moves count and only its lift ends
+    // the drag, so a palm or second finger elsewhere on the glass can't
+    // steal or cancel it; a new touch that qualifies (on the hero) takes over.
+    let owner = null;
     let done = false;
 
     const centre = ([c, r]) => [c * CELL + HALF, r * CELL + HALF];
@@ -160,7 +163,7 @@ export default {
       const cur = cellAt(e);
       // Must pick the hero up from where it actually is.
       if (!cur || cur[0] !== path[path.length - 1][0] || cur[1] !== path[path.length - 1][1]) return;
-      dragging = true;
+      owner = e.pointerId;
       // Capture keeps the drag alive when the finger leaves the element. It
       // throws if the pointer is no longer active (a race on fast lifts), which
       // must not abort the drag we just started.
@@ -169,7 +172,7 @@ export default {
     };
 
     const onMove = (e) => {
-      if (!dragging || done) return;
+      if (e.pointerId !== owner || done) return;
       e.preventDefault();
       const next = cellAt(e);
       if (!next) return;
@@ -190,14 +193,14 @@ export default {
 
       if (next[0] === goal[0] && next[1] === goal[1]) {
         done = true;
-        dragging = false;
+        owner = null;
         ctx.win(wrap);
       } else {
         ctx.ping();
       }
     };
 
-    const onUp = () => { dragging = false; };
+    const onUp = (e) => { if (e.pointerId === owner) owner = null; };
 
     svg.addEventListener('pointerdown', onDown);
     svg.addEventListener('pointermove', onMove);

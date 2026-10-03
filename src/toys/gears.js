@@ -98,7 +98,9 @@ export default {
     let gears = buildGears(colors);
     let rafId = null;
     let svg;
-    let drag = null; // { idx, lastAngle, moved }
+    // pointerId -> { idx, lastAngle, moved }: each finger turns the gear it
+    // grabbed, so a second touch can't make the first finger's gear jump.
+    const drags = new Map();
 
     const wrap = el('div', { class: 'gears-wrap' });
     const shuffle = el('button', {
@@ -167,12 +169,13 @@ export default {
       const idx = Number(gearEl.dataset.i);
       const g = gears[idx];
       g.velocity = 0; // grabbing a gear stops any ongoing coast immediately
-      drag = { idx, lastAngle: angleTo(g.cx, g.cy, toSvgPoint(e)), moved: 0 };
+      drags.set(e.pointerId, { idx, lastAngle: angleTo(g.cx, g.cy, toSvgPoint(e)), moved: 0 });
       try { svg.setPointerCapture(e.pointerId); } catch { /* not fatal */ }
       e.preventDefault();
     }
 
     function onMove(e) {
+      const drag = drags.get(e.pointerId);
       if (!drag) return;
       const g = gears[drag.idx];
       const angle = angleTo(g.cx, g.cy, toSvgPoint(e));
@@ -183,7 +186,8 @@ export default {
       e.preventDefault();
     }
 
-    function onUp() {
+    function onUp(e) {
+      const drag = drags.get(e.pointerId);
       if (!drag) return;
       // A near-stationary tap (finger came down and up without really
       // moving) reads as "spin this", not "I rotated it by ~0 degrees".
@@ -192,7 +196,7 @@ export default {
         sfx('tap');
         if (!rafId) rafId = requestAnimationFrame(frame);
       }
-      drag = null;
+      drags.delete(e.pointerId);
     }
 
     function render() {
