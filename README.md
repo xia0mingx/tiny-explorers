@@ -193,6 +193,10 @@ parts that define the silhouette underneath the real ones, and the details
 so they don't change the shadow, and keep the duck, fish, turtle and bee
 side-on — Shadows uses mirrored copies of the first three as decoys and Spot
 It flips the bee, so a symmetric version would make those rounds unwinnable.
+Objects use the same style but **never get a face** — Sort It asks "animal
+or thing?", and a face is the cue that says animal. The countable star is
+`shinyStar`; the plain geometric `star` stays as it is for Shapes, Patterns
+and Dot to Dot, which teach its form.
 
 ### Sound
 

@@ -130,8 +130,8 @@ const roundEyes = (cy, spread = 12, r = 5.2, cx = 50) => `
 const cheeks = (cy, spread = 20, r = 4.6) => `
   <ellipse cx="${50 - spread}" cy="${cy}" rx="${r}" ry="${r * 0.7}" fill="${BLUSH}" opacity=".6"/>
   <ellipse cx="${50 + spread}" cy="${cy}" rx="${r}" ry="${r * 0.7}" fill="${BLUSH}" opacity=".6"/>`;
-const shine = (cx, cy, rx = 8, ry = 4.5) =>
-  `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#fff" opacity=".35" transform="rotate(-28 ${cx} ${cy})"/>`;
+const shine = (cx, cy, rx = 8, ry = 4.5, rot = -28, op = 0.35) =>
+  `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#fff" opacity="${op}" transform="rotate(${rot} ${cx} ${cy})"/>`;
 const catMouth = (y) => `<path d="M50 ${y} q-3 4 -6.5 1.5 M50 ${y} q3 4 6.5 1.5"
   stroke="${EYE}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`;
 
@@ -139,11 +139,21 @@ const catMouth = (y) => `<path d="M50 ${y} q-3 4 -6.5 1.5 M50 ${y} q3 4 6.5 1.5"
  *  drawn underneath the real parts. */
 function sticker(parts, c, w = 5) {
   const o = shade(c, -70);
-  const under = parts
-    .replace(/stroke-width="([\d.]+)"/g, (_, n) => `stroke-width="${Number(n) + w}"`)
-    .replace(/stroke="(?!none")[^"]*"/g, `stroke="${o}"`)
-    .replace(/fill="(?!none")[^"]*"/g,
-             `fill="${o}" stroke="${o}" stroke-width="${w}" stroke-linejoin="round"`);
+  // One element at a time: a part that already has its own stroke gets that
+  // stroke darkened and widened; only stroke-less filled parts gain one.
+  // Never write an attribute twice — the HTML parser shrugs that off, but
+  // Drawing turns sprites into standalone SVG images, and XML rejects the
+  // whole image over a single duplicate attribute.
+  const under = parts.replace(/<[a-z]+\b[^>]*>/g, (tag) => {
+    if (/\sstroke="(?!none")/.test(tag)) {
+      return tag
+        .replace(/stroke-width="([\d.]+)"/, (_, n) => `stroke-width="${Number(n) + w}"`)
+        .replace(/\sstroke="[^"]*"/, ` stroke="${o}"`)
+        .replace(/fill="(?!none")[^"]*"/, `fill="${o}"`);
+    }
+    return tag.replace(/fill="(?!none")[^"]*"/,
+      `fill="${o}" stroke="${o}" stroke-width="${w}" stroke-linejoin="round"`);
+  });
   return under + parts;
 }
 
@@ -474,65 +484,97 @@ for (const [name, fn] of Object.entries(ANIMAL_ART)) add(name, fn);
 
 /* ── countable objects ─────────────────────────────────────────────────── */
 
-add('apple', (c) => `
-  <path d="M50 26 Q30 16 20 36 Q10 58 26 78 Q38 92 50 82 Q62 92 74 78
-           Q90 58 80 36 Q70 16 50 26 Z" fill="${c}"/>
-  <path d="M50 28 v-14" stroke="#8a5a2b" stroke-width="5" stroke-linecap="round"/>
-  <path d="M52 18 q14 -10 22 0 q-12 8 -22 0 z" fill="#6cc24a"/>
-  <ellipse cx="34" cy="44" rx="7" ry="10" fill="#fff" opacity=".38"
-           transform="rotate(-24 34 44)"/>`);
+/* Same sticker style as the animals, but never a face: Sort It asks "animal
+   or thing?", and a face is exactly the cue that says animal.
 
-/* No 'star' here on purpose — the countable star IS the geometric one from
-   SHAPE_ART below, deliberately kept plain so the Shapes game teaches the
-   form cleanly. A faced version used to be defined at this spot and was
-   silently overwritten by SHAPE_ART's, so it never actually rendered; the
-   add() guard above now makes that class of mistake impossible. */
+   'shinyStar' is the countable star (Counting, Sort It, Balance, Drawing
+   stamps). The plain geometric 'star' in SHAPE_ART below stays as it is,
+   because the Shapes, Patterns and Dot to Dot games are teaching its form. */
 
-add('balloon', (c) => `
-  <ellipse cx="50" cy="40" rx="28" ry="33" fill="${c}"/>
-  <path d="M45 72 h10 l-5 8 z" fill="${shade(c, -30)}"/>
-  <path d="M50 80 q10 10 0 20" stroke="${shade(c, -50)}" stroke-width="2.6"
-        fill="none" stroke-linecap="round"/>
-  <ellipse cx="38" cy="28" rx="7" ry="11" fill="#fff" opacity=".42"
-           transform="rotate(-22 38 28)"/>`);
+const GREEN = '#5fbf4a';
+const BROWN = '#8a5a2b';
+const SPRINKLES = ['#ff6b8a', '#6cc0ff', '#ffc93c', '#8ee36b', '#b79bff', '#fff'];
+const sprinkles = (pts) => pts.map(([x, y, r], i) =>
+  `<rect x="${x - 3}" y="${y - 1.2}" width="6" height="2.4" rx="1.2" fill="${SPRINKLES[i % SPRINKLES.length]}" transform="rotate(${r} ${x} ${y})"/>`).join('');
 
-add('flower', (c) => `
-  <path d="M50 60 v34" stroke="#4fae4a" stroke-width="6" stroke-linecap="round"/>
-  <path d="M50 78 q-16 -4 -20 -14 q16 -2 20 14 z" fill="#4fae4a"/>
-  ${[0, 1, 2, 3, 4, 5].map((i) => {
-    const a = (i * Math.PI) / 3;
-    return `<ellipse cx="${50 + 22 * Math.cos(a)}" cy="${44 + 22 * Math.sin(a)}"
-             rx="14" ry="11" fill="${c}"
-             transform="rotate(${(i * 60)} ${50 + 22 * Math.cos(a)} ${44 + 22 * Math.sin(a)})"/>`;
-  }).join('')}
-  <circle cx="50" cy="44" r="12" fill="#ffd449"/>
-  ${eyes(42, 5, 2.8)}
-  ${smile(48, 3.4)}`);
+const OBJECT_ART = {
+  apple: (c) => sticker(`
+    <path d="M50 30 v-15" stroke="${BROWN}" stroke-width="5" stroke-linecap="round"/>
+    <path d="M52 20 q15 -11 24 0 q-13 9 -24 0 z" fill="${GREEN}"/>
+    <path d="M50 28 Q30 17 19 37 Q9 59 25 79 Q37 93 50 84 Q63 93 75 79 Q91 59 81 37 Q70 17 50 28 Z" fill="${c}"/>`, c) + `
+    <path d="M30 78 Q40 88 50 84 Q60 88 70 78 Q60 84 50 80 Q40 84 30 78 Z" fill="${shade(c, -22)}" opacity=".5"/>
+    <path d="M56 21 q9 -4 15 -1" stroke="${shade(GREEN, -30)}" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+    ${shine(33, 43, 7, 11, -24, 0.45)}
+    <circle cx="40" cy="58" r="2.6" fill="#fff" opacity=".45"/>`,
 
-add('cupcake', (c) => `
-  <path d="M26 52 h48 l-7 38 q-1 6 -7 6 H40 q-6 0 -7 -6 z" fill="#ffe0b8"/>
-  <path d="M40 54 l-3 42 M50 54 v42 M60 54 l3 42"
-        stroke="#e8b98a" stroke-width="3"/>
-  <path d="M22 52 q4 -30 28 -30 q24 0 28 30 z" fill="${c}"/>
-  <circle cx="50" cy="18" r="7" fill="#ff5d73"/>
-  <circle cx="36" cy="40" r="3" fill="#fff" opacity=".6"/>
-  <circle cx="62" cy="36" r="3" fill="#fff" opacity=".6"/>`);
+  shinyStar: (c) => sticker(`
+    <polygon points="${starPoly(5, 50, 54, 44, 21)}" fill="${c}" stroke="${c}" stroke-width="8" stroke-linejoin="round"/>`, c) + `
+    <polygon points="${starPoly(5, 50, 56, 24, 11)}" fill="${shade(c, 30)}" stroke="${shade(c, 30)}" stroke-width="4" stroke-linejoin="round"/>
+    ${shine(38, 36, 6, 3.5, -28, 0.45)}
+    <circle cx="61" cy="44" r="2.4" fill="#fff" opacity=".6"/>`,
 
-add('strawberry', (c) => `
-  <path d="M50 34 Q22 34 22 56 Q22 84 50 94 Q78 84 78 56 Q78 34 50 34 Z" fill="${c}"/>
-  <path d="M30 30 h40 l-8 10 h-24 z" fill="#4fae4a"/>
-  <path d="M50 30 v-12" stroke="#4fae4a" stroke-width="5" stroke-linecap="round"/>
-  ${[[38, 50], [58, 48], [46, 62], [64, 64], [34, 68], [52, 78]]
-    .map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="2.6" ry="3.6" fill="#fff5cc"/>`).join('')}`);
+  balloon: (c) => `
+    <path d="M50 80 q10 9 -2 20" stroke="${shade(c, -60)}" stroke-width="2.4" fill="none" stroke-linecap="round"/>` + sticker(`
+    <path d="M45 73 h10 l-5 8 z" fill="${shade(c, -25)}"/>
+    <ellipse cx="50" cy="41" rx="28" ry="33" fill="${c}"/>`, c) + `
+    <path d="M30 56 Q50 80 70 56 Q62 70 50 72 Q38 70 30 56 Z" fill="${shade(c, -18)}" opacity=".5"/>
+    ${shine(38, 27, 7, 12, -22, 0.45)}
+    <circle cx="44" cy="45" r="2.6" fill="#fff" opacity=".5"/>`,
 
-add('icecream', (c) => `
-  <path d="M32 48 h36 l-18 46 z" fill="#f0b276"/>
-  <path d="M36 56 l24 20 M44 48 l20 16 M32 66 l14 12"
-        stroke="#d3945a" stroke-width="2.6"/>
-  <circle cx="38" cy="36" r="16" fill="${c}"/>
-  <circle cx="62" cy="36" r="16" fill="${shade(c, 34)}"/>
-  <circle cx="50" cy="22" r="15" fill="${shade(c, -22)}"/>
-  <circle cx="50" cy="8" r="5" fill="#ff5d73"/>`);
+  flower: (c) => {
+    const petals = [0, 1, 2, 3, 4, 5].map((i) => {
+      const a = (i * Math.PI) / 3 - Math.PI / 2;
+      const x = 50 + 21 * Math.cos(a), y = 42 + 21 * Math.sin(a);
+      return [x, y, i * 60];
+    });
+    return sticker(`
+      <path d="M50 58 v36" stroke="${GREEN}" stroke-width="6" stroke-linecap="round"/>
+      <path d="M50 80 q-18 -2 -22 -15 q17 -2 22 15 z" fill="${GREEN}"/>
+      <path d="M50 86 q16 -2 20 -13 q-15 -2 -20 13 z" fill="${GREEN}"/>
+      ${petals.map(([x, y, r]) => `<ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="11" ry="15" fill="${c}" transform="rotate(${r} ${x.toFixed(1)} ${y.toFixed(1)})"/>`).join('')}
+      <circle cx="50" cy="42" r="12" fill="#ffd449"/>`, c) + `
+      ${petals.map(([x, y, r]) => `<ellipse cx="${(50 + (x - 50) * 1.15).toFixed(1)}" cy="${(42 + (y - 42) * 1.15).toFixed(1)}" rx="4" ry="6.5" fill="${shade(c, 35)}" transform="rotate(${r} ${(50 + (x - 50) * 1.15).toFixed(1)} ${(42 + (y - 42) * 1.15).toFixed(1)})"/>`).join('')}
+      <circle cx="46" cy="40" r="1.8" fill="#e0a92a"/><circle cx="53" cy="39" r="1.8" fill="#e0a92a"/>
+      <circle cx="50" cy="45" r="1.8" fill="#e0a92a"/><circle cx="55" cy="45" r="1.5" fill="#e0a92a"/><circle cx="45" cy="46" r="1.5" fill="#e0a92a"/>
+      ${shine(45, 36, 4, 2.4, -28, 0.45)}
+      <path d="M50 79 q-10 -2 -15 -9" stroke="${shade(GREEN, -25)}" stroke-width="1.4" fill="none" stroke-linecap="round"/>`;
+  },
+
+  cupcake: (c) => sticker(`
+    <path d="M26 54 h48 l-7 36 q-1 6 -7 6 H40 q-6 0 -7 -6 z" fill="#ffd9a8"/>
+    <path d="M21 56 Q18 44 30 42 Q30 26 50 26 Q70 26 70 42 Q82 44 79 56 Q50 62 21 56 Z" fill="${c}"/>
+    <path d="M50 26 q-1 -8 4 -12" stroke="${BROWN}" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+    <circle cx="50" cy="20" r="7" fill="#ff4d6d"/>`, c) + `
+    <path d="M38 58 l-2 37 M50 59 v37 M62 58 l2 37" stroke="#e8b47e" stroke-width="3" stroke-linecap="round"/>
+    <path d="M30 42 Q50 50 70 42 M27 52 Q50 58 73 52" stroke="${shade(c, -18)}" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".7"/>
+    ${sprinkles([[36, 36, 30], [58, 34, -20], [46, 46, 70], [64, 48, 15], [30, 50, -40], [52, 38, 0], [40, 54, 55]])}
+    ${shine(38, 32, 6, 3, -28, 0.45)}
+    <circle cx="47.5" cy="17.5" r="2" fill="#fff" opacity=".7"/>`,
+
+  strawberry: (c) => sticker(`
+    <path d="M50 34 Q20 33 21 56 Q23 84 50 95 Q77 84 79 56 Q80 33 50 34 Z" fill="${c}"/>
+    <polygon points="${starPoly(5, 50, 34, 19, 8)}" fill="${GREEN}" stroke="${GREEN}" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M50 26 v-12" stroke="${GREEN}" stroke-width="5" stroke-linecap="round"/>`, c) + `
+    ${[[36, 52], [50, 48], [64, 52], [42, 64], [58, 64], [34, 72], [50, 76], [66, 72], [44, 86], [56, 86]]
+      .map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="2.2" ry="3.4" fill="#fff5cc"/>`).join('')}
+    ${shine(32, 52, 5, 9, -20, 0.45)}`,
+
+  icecream: (c) => sticker(`
+    <path d="M30 52 h40 l-20 45 z" fill="#f2b673"/>
+    <circle cx="36" cy="44" r="15" fill="${shade(c, 30)}"/>
+    <circle cx="64" cy="44" r="15" fill="${shade(c, -18)}"/>
+    <circle cx="50" cy="30" r="17" fill="${c}"/>
+    <path d="M50 13 q-1 -6 4 -9" stroke="${BROWN}" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    <circle cx="50" cy="12" r="5.5" fill="#ff4d6d"/>`, c) + `
+    <path d="M36 60 l22 22 M44 54 l20 20 M34 68 l16 16 M64 60 l-22 22 M56 54 l-20 20 M66 68 l-12 12" stroke="#d4935a" stroke-width="2" stroke-linecap="round"/>
+    <path d="M38 44 q-2 10 3 12 q4 0 3 -8" fill="${c}"/>
+    <path d="M58 47 q0 8 4 8 q3 -1 2 -9" fill="${shade(c, 30)}"/>
+    ${sprinkles([[44, 24, 30], [56, 22, -30], [52, 34, 80], [40, 33, -10], [60, 32, 40]])}
+    ${shine(42, 22, 5, 3, -28, 0.45)}
+    <circle cx="48.5" cy="10.5" r="1.6" fill="#fff" opacity=".7"/>`,
+};
+
+for (const [name, fn] of Object.entries(OBJECT_ART)) add(name, fn);
 
 /* ── scene props (spot the difference) ─────────────────────────────────── */
 
@@ -913,7 +955,7 @@ export const ANIMALS = ['cat', 'bunny', 'bear', 'dog', 'mouse', 'fox', 'frog', '
                         'owl', 'fish', 'pig', 'elephant', 'penguin', 'lion', 'turtle',
                         'bee', 'butterfly'];
 
-export const OBJECTS = ['apple', 'star', 'balloon', 'flower', 'cupcake',
+export const OBJECTS = ['apple', 'shinyStar', 'balloon', 'flower', 'cupcake',
                         'strawberry', 'icecream'];
 
 /* No PROPS list here: Spot the Difference owns its own GROUND_PROPS /
@@ -930,7 +972,7 @@ export const EXPRESSIVE = { sun: 'sunSad', bus: 'busSad', train: 'trainSad' };
 
 /** Nouns spoken by the counting game ("How many ducks?"). */
 export const PLURALS = {
-  apple: 'apples', star: 'stars', balloon: 'balloons', flower: 'flowers',
+  apple: 'apples', shinyStar: 'stars', balloon: 'balloons', flower: 'flowers',
   cupcake: 'cupcakes', strawberry: 'strawberries', icecream: 'ice creams',
   cat: 'cats', bunny: 'bunnies', bear: 'bears', dog: 'dogs', mouse: 'mice',
   fox: 'foxes', frog: 'frogs', duck: 'ducks', owl: 'owls', fish: 'fish',
