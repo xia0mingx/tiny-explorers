@@ -186,6 +186,14 @@ adding a sprite:
    the whole point. Two round-headed animals differing only in face markings
    would produce an unsolvable shadow round.
 
+The 17 animals are drawn as whole sitting characters with a dark "sticker"
+outline: `sticker()` in `art.js` paints a dark, wide-stroked copy of the
+parts that define the silhouette underneath the real ones, and the details
+(tummies, faces, markings) go on top. Keep details inside the body outline
+so they don't change the shadow, and keep the duck, fish, turtle and bee
+side-on — Shadows uses mirrored copies of the first three as decoys and Spot
+It flips the bee, so a symmetric version would make those rounds unwinnable.
+
 ### Sound
 
 Effects are synthesised with WebAudio (a few shaped sine tones), not shipped as
