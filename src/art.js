@@ -105,188 +105,372 @@ const add = (name, fn) => {
   SPRITES[name] = fn;
 };
 
-add('cat', (c) => `
-  <path d="M20 46 L15 10 L44 27 Z" fill="${shade(c, -18)}"/>
-  <path d="M80 46 L85 10 L56 27 Z" fill="${shade(c, -18)}"/>
-  <circle cx="50" cy="58" r="33" fill="${c}"/>
-  ${eyes(54, 13)}
-  <path d="M46 66 l4 -4 l4 4 z" fill="${BLUSH}"/>
-  ${smile(70, 6)}
-  <path d="M14 58 h-11 M14 64 h-11 M86 58 h11 M86 64 h11"
-        stroke="${shade(c, -40)}" stroke-width="2.4" stroke-linecap="round"/>
-  ${blush(70, 26)}`);
+/* Animals are drawn as whole sitting (or, for the side-on duck, fish,
+   turtle and bee, swimming/flying) characters with a dark "sticker" outline
+   around the whole silhouette: sticker() draws a dark, wide-stroked copy of
+   the silhouette-defining parts underneath the real ones, then the details
+   (tummies, faces, markings) go on top without an outline.
 
-add('bunny', (c) => `
-  <ellipse cx="36" cy="24" rx="9" ry="23" fill="${c}"/>
-  <ellipse cx="64" cy="24" rx="9" ry="23" fill="${c}"/>
-  <ellipse cx="36" cy="26" rx="4.5" ry="15" fill="${BLUSH}" opacity=".65"/>
-  <ellipse cx="64" cy="26" rx="4.5" ry="15" fill="${BLUSH}" opacity=".65"/>
-  <circle cx="50" cy="66" r="28" fill="${c}"/>
-  ${eyes(62, 11, 4.8)}
-  <path d="M46.5 72 l3.5 -3.5 l3.5 3.5 z" fill="${BLUSH}"/>
-  ${smile(77, 5.5)}
-  ${blush(76, 21)}`);
+   Only the parts passed to sticker() — and anything else outside the body —
+   shape the shadow, so keep every detail inside the body outline. The duck,
+   fish, turtle and bee must stay asymmetric: Shadows uses mirrored copies of
+   the first three as decoys and Spot It flips the bee. */
 
-add('bear', (c) => `
-  <circle cx="24" cy="26" r="14" fill="${c}"/>
-  <circle cx="76" cy="26" r="14" fill="${c}"/>
-  <circle cx="24" cy="26" r="7" fill="${BLUSH}" opacity=".6"/>
-  <circle cx="76" cy="26" r="7" fill="${BLUSH}" opacity=".6"/>
-  <circle cx="50" cy="58" r="33" fill="${c}"/>
-  <ellipse cx="50" cy="70" rx="17" ry="13" fill="${shade(c, 26)}"/>
-  ${eyes(52, 13)}
-  <ellipse cx="50" cy="64" rx="6" ry="4.5" fill="${EYE}"/>
-  ${smile(74, 6)}
-  ${blush(66, 27)}`);
+const NOSE = '#ff7f9c';
+const CREAM = '#fff6ea';
+const ORANGE = '#ffa62b';
 
-add('dog', (c) => `
-  <ellipse cx="17" cy="56" rx="11" ry="24" fill="${shade(c, -26)}"/>
-  <ellipse cx="83" cy="56" rx="11" ry="24" fill="${shade(c, -26)}"/>
-  <circle cx="50" cy="54" r="31" fill="${c}"/>
-  <ellipse cx="50" cy="70" rx="19" ry="14" fill="${shade(c, 28)}"/>
-  ${eyes(49, 12)}
-  <ellipse cx="50" cy="64" rx="7" ry="5" fill="${EYE}"/>
-  <path d="M50 69 v6 M50 75 q-6 5 -10 0 M50 75 q6 5 10 0"
-        stroke="${EYE}" stroke-width="2.6" fill="none" stroke-linecap="round"/>
-  ${blush(60, 28)}`);
+const roundEyes = (cy, spread = 12, r = 5.2, cx = 50) => `
+  <circle cx="${cx - spread}" cy="${cy}" r="${r}" fill="${EYE}"/>
+  <circle cx="${cx + spread}" cy="${cy}" r="${r}" fill="${EYE}"/>
+  <circle cx="${cx - spread + r * 0.38}" cy="${cy - r * 0.38}" r="${r * 0.38}" fill="#fff"/>
+  <circle cx="${cx + spread + r * 0.38}" cy="${cy - r * 0.38}" r="${r * 0.38}" fill="#fff"/>
+  <circle cx="${cx - spread - r * 0.35}" cy="${cy + r * 0.4}" r="${r * 0.16}" fill="#fff"/>
+  <circle cx="${cx + spread - r * 0.35}" cy="${cy + r * 0.4}" r="${r * 0.16}" fill="#fff"/>`;
+const cheeks = (cy, spread = 20, r = 4.6) => `
+  <ellipse cx="${50 - spread}" cy="${cy}" rx="${r}" ry="${r * 0.7}" fill="${BLUSH}" opacity=".6"/>
+  <ellipse cx="${50 + spread}" cy="${cy}" rx="${r}" ry="${r * 0.7}" fill="${BLUSH}" opacity=".6"/>`;
+const shine = (cx, cy, rx = 8, ry = 4.5) =>
+  `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#fff" opacity=".35" transform="rotate(-28 ${cx} ${cy})"/>`;
+const catMouth = (y) => `<path d="M50 ${y} q-3 4 -6.5 1.5 M50 ${y} q3 4 6.5 1.5"
+  stroke="${EYE}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`;
 
-add('mouse', (c) => `
-  <circle cx="20" cy="30" r="18" fill="${c}"/>
-  <circle cx="80" cy="30" r="18" fill="${c}"/>
-  <circle cx="20" cy="30" r="10" fill="${BLUSH}" opacity=".6"/>
-  <circle cx="80" cy="30" r="10" fill="${BLUSH}" opacity=".6"/>
-  <circle cx="50" cy="60" r="27" fill="${c}"/>
-  ${eyes(56, 11, 4.6)}
-  <circle cx="50" cy="70" r="4.5" fill="${BLUSH}"/>
-  <path d="M45 74 h-14 M45 78 h-13 M55 74 h14 M55 78 h13"
-        stroke="${shade(c, -40)}" stroke-width="2" stroke-linecap="round"/>
-  ${blush(72, 20, 4.6)}`);
+/** Sticker outline: a dark copy of the silhouette parts, stroked wide,
+ *  drawn underneath the real parts. */
+function sticker(parts, c, w = 5) {
+  const o = shade(c, -70);
+  const under = parts
+    .replace(/stroke-width="([\d.]+)"/g, (_, n) => `stroke-width="${Number(n) + w}"`)
+    .replace(/stroke="(?!none")[^"]*"/g, `stroke="${o}"`)
+    .replace(/fill="(?!none")[^"]*"/g,
+             `fill="${o}" stroke="${o}" stroke-width="${w}" stroke-linejoin="round"`);
+  return under + parts;
+}
 
-add('fox', (c) => `
-  <path d="M18 48 L12 8 L44 26 Z" fill="${shade(c, -26)}"/>
-  <path d="M82 48 L88 8 L56 26 Z" fill="${shade(c, -26)}"/>
-  <path d="M50 88 L18 46 Q50 30 82 46 Z" fill="${c}"/>
-  <path d="M50 88 L36 70 Q50 62 64 70 Z" fill="#fff9f2"/>
-  ${eyes(54, 13, 4.6)}
-  <ellipse cx="50" cy="80" rx="5" ry="4" fill="${EYE}"/>
-  ${blush(66, 21, 5)}`);
+const ANIMAL_ART = {
+  cat: (c) => sticker(`
+    <path d="M66 86 Q90 88 88 68 Q87 60 81 62" fill="none" stroke="${c}" stroke-width="8" stroke-linecap="round"/>
+    <ellipse cx="50" cy="76" rx="22" ry="17" fill="${c}"/>
+    <path d="M27 34 L24 9 L45 21 Z" fill="${c}"/>
+    <path d="M73 34 L76 9 L55 21 Z" fill="${c}"/>
+    <ellipse cx="50" cy="40" rx="27" ry="24" fill="${c}"/>
+    <ellipse cx="40" cy="91" rx="8" ry="5" fill="${c}"/>
+    <ellipse cx="60" cy="91" rx="8" ry="5" fill="${c}"/>`, c) + `
+    <path d="M30 27 L28.5 15 L40 22 Z" fill="${BLUSH}" opacity=".85"/>
+    <path d="M70 27 L71.5 15 L60 22 Z" fill="${BLUSH}" opacity=".85"/>
+    <ellipse cx="50" cy="79" rx="12" ry="11" fill="${CREAM}"/>
+    <path d="M44 19 l1.6 6.5 M50 17.5 v7.5 M56 19 l-1.6 6.5" stroke="${shade(c, -30)}" stroke-width="2.6" stroke-linecap="round"/>
+    <ellipse cx="50" cy="51" rx="11" ry="7.5" fill="${CREAM}"/>
+    ${roundEyes(40, 11, 5.4)}
+    <path d="M46.5 46.5 h7 l-3.5 4 z" fill="${NOSE}" stroke="${NOSE}" stroke-linejoin="round"/>
+    ${catMouth(50.5)}
+    <path d="M37 49 h-13 M37 53 l-12 3 M63 49 h13 M63 53 l12 3" stroke="${shade(c, -45)}" stroke-width="1.8" stroke-linecap="round"/>
+    ${cheeks(49, 19)}
+    <path d="M37 92 v-3 M43 92 v-3 M57 92 v-3 M63 92 v-3" stroke="${shade(c, -30)}" stroke-width="1.6" stroke-linecap="round"/>
+    ${shine(37, 27)}`,
 
-add('frog', (c) => `
-  <circle cx="28" cy="26" r="16" fill="${c}"/>
-  <circle cx="72" cy="26" r="16" fill="${c}"/>
-  <circle cx="28" cy="26" r="9" fill="#fff"/>
-  <circle cx="72" cy="26" r="9" fill="#fff"/>
-  <circle cx="28" cy="27" r="5" fill="${EYE}"/>
-  <circle cx="72" cy="27" r="5" fill="${EYE}"/>
-  <ellipse cx="50" cy="62" rx="34" ry="28" fill="${c}"/>
-  <path d="M30 64 Q50 82 70 64" stroke="${EYE}" stroke-width="3.4"
-        fill="none" stroke-linecap="round"/>
-  ${blush(62, 26)}`);
+  fox: (c) => sticker(`
+    <path d="M42 90 Q-2 94 4 54 Q8 30 26 40 Q34 46 26 56 Q20 70 42 76 Z" fill="${c}"/>
+    <ellipse cx="50" cy="77" rx="20" ry="16" fill="${c}"/>
+    <path d="M27 34 L22 6 L46 21 Z" fill="${c}"/>
+    <path d="M73 34 L78 6 L54 21 Z" fill="${c}"/>
+    <path d="M20 33 Q50 8 80 33 Q78 52 50 64 Q22 52 20 33 Z" fill="${c}"/>
+    <ellipse cx="41" cy="91" rx="7" ry="4.5" fill="${shade(c, -45)}"/>
+    <ellipse cx="59" cy="91" rx="7" ry="4.5" fill="${shade(c, -45)}"/>`, c) + `
+    <path d="M5 48 Q10 30 26 40 Q30 44 28 50 Q16 44 5 48 Z" fill="${CREAM}"/>
+    <path d="M30 28 L27.5 13 L41 22 Z" fill="${EYE}" opacity=".55"/>
+    <path d="M70 28 L72.5 13 L59 22 Z" fill="${EYE}" opacity=".55"/>
+    <path d="M21 36 Q36 40 50 64 Q27 54 21 36 Z" fill="${CREAM}"/>
+    <path d="M79 36 Q64 40 50 64 Q73 54 79 36 Z" fill="${CREAM}"/>
+    <ellipse cx="50" cy="81" rx="10" ry="9" fill="${CREAM}"/>
+    ${roundEyes(38, 12, 5)}
+    <ellipse cx="50" cy="58" rx="4.2" ry="3.2" fill="${EYE}"/>
+    ${cheeks(46, 22, 4.2)}
+    ${shine(36, 24)}`,
 
-add('duck', (c) => `
-  <ellipse cx="46" cy="62" rx="32" ry="28" fill="${c}"/>
-  <circle cx="58" cy="34" r="21" fill="${c}"/>
-  <path d="M76 32 q16 3 0 11 q-6 -5 0 -11 z" fill="#ffa62b"/>
-  <circle cx="62" cy="30" r="4.6" fill="${EYE}"/>
-  <circle cx="63.5" cy="28.5" r="1.6" fill="#fff"/>
-  <path d="M16 60 q-12 6 -2 14 q8 3 12 -6 z" fill="${shade(c, -22)}"/>
-  ${blush(38, 14, 4.4, 58)}`);
+  elephant: (c) => sticker(`
+    <ellipse cx="20" cy="42" rx="18" ry="22" fill="${c}"/>
+    <ellipse cx="80" cy="42" rx="18" ry="22" fill="${c}"/>
+    <ellipse cx="50" cy="77" rx="23" ry="17" fill="${c}"/>
+    <circle cx="50" cy="42" r="24" fill="${c}"/>
+    <ellipse cx="37" cy="91" rx="9" ry="5.5" fill="${c}"/>
+    <ellipse cx="63" cy="91" rx="9" ry="5.5" fill="${c}"/>
+    <path d="M50 54 Q50 76 60 76 Q70 76 70 66" fill="none" stroke="${c}" stroke-width="11" stroke-linecap="round"/>`, c) + `
+    <ellipse cx="50" cy="82" rx="13" ry="9" fill="${shade(c, 22)}"/>
+    <path d="M50 56 Q50 76 60 76 Q70 76 70 66" fill="none" stroke="${shade(c, -70)}" stroke-width="15" stroke-linecap="round"/>
+    <path d="M50 54 Q50 76 60 76 Q70 76 70 66" fill="none" stroke="${c}" stroke-width="10" stroke-linecap="round"/>
+    <ellipse cx="20" cy="43" rx="11" ry="15" fill="${BLUSH}" opacity=".55"/>
+    <ellipse cx="80" cy="43" rx="11" ry="15" fill="${BLUSH}" opacity=".55"/>
+    <path d="M46.5 61 h7 M46.5 66 h7 M64 71 l3 3" stroke="${shade(c, -30)}" stroke-width="1.8" stroke-linecap="round"/>
+    <circle cx="32" cy="93" r="2" fill="${CREAM}"/><circle cx="37" cy="94" r="2" fill="${CREAM}"/><circle cx="42" cy="93" r="2" fill="${CREAM}"/>
+    <circle cx="58" cy="93" r="2" fill="${CREAM}"/><circle cx="63" cy="94" r="2" fill="${CREAM}"/><circle cx="68" cy="93" r="2" fill="${CREAM}"/>
+    ${roundEyes(39, 10, 4.8)}
+    ${cheeks(49, 16, 4.2)}
+    ${shine(38, 27)}`,
 
-add('owl', (c) => `
-  <path d="M26 30 L20 8 L42 20 Z" fill="${shade(c, -20)}"/>
-  <path d="M74 30 L80 8 L58 20 Z" fill="${shade(c, -20)}"/>
-  <ellipse cx="50" cy="56" rx="32" ry="36" fill="${c}"/>
-  <circle cx="36" cy="48" r="14" fill="#fff9f2"/>
-  <circle cx="64" cy="48" r="14" fill="#fff9f2"/>
-  <circle cx="36" cy="48" r="7" fill="${EYE}"/>
-  <circle cx="64" cy="48" r="7" fill="${EYE}"/>
-  <circle cx="38" cy="46" r="2.4" fill="#fff"/>
-  <circle cx="66" cy="46" r="2.4" fill="#fff"/>
-  <path d="M50 60 l-6 8 h12 z" fill="#ffa62b"/>
-  <path d="M32 80 q18 10 36 0" stroke="${shade(c, -25)}" stroke-width="3"
-        fill="none" stroke-linecap="round"/>`);
+  lion: (c) => {
+    const mane = shade(c, -40);
+    const puffs = Array.from({ length: 12 }, (_, i) => {
+      const a = (i / 12) * Math.PI * 2;
+      return `<circle cx="${(50 + 26 * Math.cos(a)).toFixed(1)}" cy="${(41 + 26 * Math.sin(a)).toFixed(1)}" r="10" fill="${mane}"/>`;
+    }).join('');
+    return sticker(`
+      <path d="M66 86 Q92 88 86 64" fill="none" stroke="${c}" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="86" cy="61" r="6.5" fill="${mane}"/>
+      <ellipse cx="50" cy="79" rx="21" ry="15" fill="${c}"/>
+      ${puffs}
+      <ellipse cx="40" cy="92" rx="8" ry="5" fill="${c}"/>
+      <ellipse cx="60" cy="92" rx="8" ry="5" fill="${c}"/>`, c) + `
+      <ellipse cx="50" cy="82" rx="11" ry="9" fill="${CREAM}"/>
+      <circle cx="34" cy="24" r="6.5" fill="${c}"/><circle cx="66" cy="24" r="6.5" fill="${c}"/>
+      <circle cx="34" cy="24" r="3.2" fill="${BLUSH}"/><circle cx="66" cy="24" r="3.2" fill="${BLUSH}"/>
+      <circle cx="50" cy="42" r="21" fill="${c}"/>
+      <circle cx="44.5" cy="51" r="6.5" fill="${CREAM}"/><circle cx="55.5" cy="51" r="6.5" fill="${CREAM}"/>
+      ${roundEyes(39, 9, 4.6)}
+      <path d="M46 46 h8 l-4 4.5 z" fill="${EYE}" stroke="${EYE}" stroke-linejoin="round"/>
+      ${catMouth(51)}
+      ${cheeks(48, 15, 3.8)}
+      ${shine(40, 30, 6, 3.5)}`;
+  },
 
-add('fish', (c) => `
-  <path d="M22 50 L2 28 L6 50 L2 72 Z" fill="${shade(c, -22)}"/>
-  <ellipse cx="56" cy="50" rx="36" ry="27" fill="${c}"/>
-  <path d="M52 23 q10 -14 18 -2 z" fill="${shade(c, -22)}"/>
-  <circle cx="76" cy="44" r="5.4" fill="${EYE}"/>
-  <circle cx="77.6" cy="42.4" r="1.9" fill="#fff"/>
-  <path d="M74 58 q6 5 12 0" stroke="${EYE}" stroke-width="2.6"
-        fill="none" stroke-linecap="round"/>
-  <circle cx="46" cy="46" r="5" fill="${shade(c, 30)}" opacity=".7"/>
-  <circle cx="40" cy="60" r="4" fill="${shade(c, 30)}" opacity=".7"/>`);
+  owl: (c) => sticker(`
+    <path d="M28 26 L22 5 L43 16 Z" fill="${c}"/>
+    <path d="M72 26 L78 5 L57 16 Z" fill="${c}"/>
+    <ellipse cx="50" cy="54" rx="31" ry="37" fill="${c}"/>
+    <ellipse cx="19" cy="60" rx="8" ry="19" fill="${shade(c, -28)}" transform="rotate(14 19 60)"/>
+    <ellipse cx="81" cy="60" rx="8" ry="19" fill="${shade(c, -28)}" transform="rotate(-14 81 60)"/>
+    <ellipse cx="42" cy="92" rx="6" ry="4" fill="${ORANGE}"/>
+    <ellipse cx="58" cy="92" rx="6" ry="4" fill="${ORANGE}"/>`, c) + `
+    <ellipse cx="50" cy="70" rx="19" ry="19" fill="${CREAM}"/>
+    <path d="M42 66 q4 4 8 0 q4 4 8 0 M38 74 q4 4 8 0 q4 4 8 0 q4 4 8 0 M42 82 q4 4 8 0 q4 4 8 0"
+          stroke="${shade(c, -10)}" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <circle cx="37" cy="42" r="13.5" fill="${shade(c, 35)}"/>
+    <circle cx="63" cy="42" r="13.5" fill="${shade(c, 35)}"/>
+    <circle cx="37" cy="42" r="10" fill="#fff"/>
+    <circle cx="63" cy="42" r="10" fill="#fff"/>
+    ${roundEyes(43, 13, 6)}
+    <path d="M45 50 h10 l-5 8 z" fill="${ORANGE}" stroke="${ORANGE}" stroke-linejoin="round"/>
+    ${shine(34, 24, 7, 4)}`,
 
-add('pig', (c) => `
-  <path d="M22 40 L20 14 L42 26 Z" fill="${shade(c, -16)}"/>
-  <path d="M78 40 L80 14 L58 26 Z" fill="${shade(c, -16)}"/>
-  <circle cx="50" cy="58" r="32" fill="${c}"/>
-  ${eyes(50, 13, 4.8)}
-  <ellipse cx="50" cy="68" rx="15" ry="11" fill="${shade(c, -22)}"/>
-  <ellipse cx="44.5" cy="68" rx="3" ry="4.2" fill="${shade(c, -55)}"/>
-  <ellipse cx="55.5" cy="68" rx="3" ry="4.2" fill="${shade(c, -55)}"/>
-  ${blush(60, 27)}`);
+  bear: (c) => sticker(`
+    <circle cx="28" cy="22" r="10" fill="${c}"/>
+    <circle cx="72" cy="22" r="10" fill="${c}"/>
+    <ellipse cx="50" cy="77" rx="24" ry="18" fill="${c}"/>
+    <ellipse cx="50" cy="42" rx="27" ry="24" fill="${c}"/>
+    <ellipse cx="38" cy="92" rx="9" ry="5.5" fill="${c}"/>
+    <ellipse cx="62" cy="92" rx="9" ry="5.5" fill="${c}"/>`, c) + `
+    <circle cx="28" cy="22" r="5" fill="${BLUSH}" opacity=".7"/>
+    <circle cx="72" cy="22" r="5" fill="${BLUSH}" opacity=".7"/>
+    <ellipse cx="50" cy="80" rx="13" ry="11" fill="${shade(c, 32)}"/>
+    <ellipse cx="50" cy="53" rx="12" ry="9" fill="${shade(c, 35)}"/>
+    <ellipse cx="50" cy="49" rx="5" ry="3.6" fill="${EYE}"/>
+    ${catMouth(52.5)}
+    ${roundEyes(38, 11, 5)}
+    ${cheeks(48, 19)}
+    <ellipse cx="38" cy="93" rx="4" ry="2.4" fill="${shade(c, 35)}"/>
+    <ellipse cx="62" cy="93" rx="4" ry="2.4" fill="${shade(c, 35)}"/>
+    ${shine(38, 28)}`,
 
-add('elephant', (c) => `
-  <ellipse cx="16" cy="52" rx="16" ry="24" fill="${shade(c, -18)}"/>
-  <ellipse cx="84" cy="52" rx="16" ry="24" fill="${shade(c, -18)}"/>
-  <circle cx="50" cy="50" r="30" fill="${c}"/>
-  <path d="M42 70 q-2 22 10 24 q10 2 10 -8" stroke="${c}" stroke-width="13"
-        fill="none" stroke-linecap="round"/>
-  ${eyes(46, 12, 4.6)}
-  ${blush(58, 21, 5)}`);
+  dog: (c) => sticker(`
+    <path d="M68 80 Q86 76 86 58" fill="none" stroke="${c}" stroke-width="7" stroke-linecap="round"/>
+    <ellipse cx="50" cy="77" rx="21" ry="17" fill="${c}"/>
+    <ellipse cx="50" cy="42" rx="25" ry="23" fill="${c}"/>
+    <ellipse cx="23" cy="44" rx="9" ry="18" fill="${shade(c, -28)}" transform="rotate(18 23 44)"/>
+    <ellipse cx="77" cy="44" rx="9" ry="18" fill="${shade(c, -28)}" transform="rotate(-18 77 44)"/>
+    <ellipse cx="40" cy="92" rx="8" ry="5" fill="${c}"/>
+    <ellipse cx="60" cy="92" rx="8" ry="5" fill="${c}"/>`, c) + `
+    <ellipse cx="50" cy="80" rx="11" ry="10" fill="${CREAM}"/>
+    <path d="M34 62 Q50 70 66 62" stroke="#ff6b8a" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <circle cx="50" cy="68.5" r="3.4" fill="#ffc93c"/>
+    <ellipse cx="62" cy="37" rx="8.5" ry="7.5" fill="${shade(c, -22)}" opacity=".7"/>
+    <ellipse cx="50" cy="53" rx="12" ry="9" fill="${CREAM}"/>
+    <path d="M46.5 56 q3.5 8 7 0 z" fill="${NOSE}"/>
+    <ellipse cx="50" cy="48.5" rx="5.5" ry="4" fill="${EYE}"/>
+    ${catMouth(52.5)}
+    ${roundEyes(38, 11, 5)}
+    ${cheeks(49, 18)}
+    ${shine(38, 25)}`,
 
-add('penguin', (c) => `
-  <ellipse cx="18" cy="58" rx="10" ry="20" fill="${shade(c, -30)}"/>
-  <ellipse cx="82" cy="58" rx="10" ry="20" fill="${shade(c, -30)}"/>
-  <ellipse cx="50" cy="54" rx="30" ry="36" fill="${c}"/>
-  <ellipse cx="50" cy="62" rx="20" ry="26" fill="#fff9f2"/>
-  ${eyes(42, 11, 4.8)}
-  <path d="M50 50 l-7 6 h14 z" fill="#ffa62b"/>
-  <path d="M34 92 q-10 2 -2 6 h14 z" fill="#ffa62b"/>
-  <path d="M66 92 q10 2 2 6 h-14 z" fill="#ffa62b"/>`);
+  mouse: (c) => sticker(`
+    <path d="M66 88 Q90 92 90 76 Q89 64 97 60" fill="none" stroke="${c}" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="24" cy="27" r="16" fill="${c}"/>
+    <circle cx="76" cy="27" r="16" fill="${c}"/>
+    <ellipse cx="50" cy="78" rx="19" ry="15" fill="${c}"/>
+    <ellipse cx="50" cy="49" rx="23" ry="20" fill="${c}"/>
+    <ellipse cx="41" cy="92" rx="7" ry="4" fill="${c}"/>
+    <ellipse cx="59" cy="92" rx="7" ry="4" fill="${c}"/>`, c) + `
+    <circle cx="24" cy="27" r="10" fill="${BLUSH}" opacity=".8"/>
+    <circle cx="76" cy="27" r="10" fill="${BLUSH}" opacity=".8"/>
+    <ellipse cx="50" cy="81" rx="10" ry="9" fill="${CREAM}"/>
+    ${roundEyes(46, 10, 5)}
+    <circle cx="50" cy="56" r="3.3" fill="${NOSE}"/>
+    ${catMouth(58.5)}
+    <path d="M41 56 h-14 M41 59.5 l-13 3 M59 56 h14 M59 59.5 l13 3" stroke="${shade(c, -45)}" stroke-width="1.6" stroke-linecap="round"/>
+    ${cheeks(55, 16, 4)}
+    ${shine(40, 37, 6, 3.5)}`,
 
-add('lion', (c) => `
-  <polygon points="${starPoly(11, 50, 54, 42, 33)}" fill="${shade(c, -32)}"/>
-  <circle cx="50" cy="54" r="28" fill="${c}"/>
-  ${eyes(50, 11, 4.6)}
-  <ellipse cx="50" cy="62" rx="5.5" ry="4" fill="${EYE}"/>
-  <path d="M50 66 v4 M50 70 q-6 5 -9 0 M50 70 q6 5 9 0"
-        stroke="${EYE}" stroke-width="2.4" fill="none" stroke-linecap="round"/>
-  ${blush(60, 20, 4.6)}`);
+  frog: (c) => sticker(`
+    <ellipse cx="22" cy="86" rx="14" ry="8" fill="${c}"/>
+    <ellipse cx="78" cy="86" rx="14" ry="8" fill="${c}"/>
+    <ellipse cx="50" cy="70" rx="30" ry="22" fill="${c}"/>
+    <circle cx="32" cy="34" r="13" fill="${c}"/>
+    <circle cx="68" cy="34" r="13" fill="${c}"/>
+    <ellipse cx="50" cy="50" rx="33" ry="20" fill="${c}"/>
+    <ellipse cx="38" cy="91" rx="7" ry="4.5" fill="${c}"/>
+    <ellipse cx="62" cy="91" rx="7" ry="4.5" fill="${c}"/>`, c) + `
+    <ellipse cx="50" cy="77" rx="18" ry="13" fill="${shade(c, 45)}"/>
+    <circle cx="32" cy="34" r="9" fill="#fff"/>
+    <circle cx="68" cy="34" r="9" fill="#fff"/>
+    ${roundEyes(35, 18, 5.5)}
+    <circle cx="44" cy="44" r="2.4" fill="${shade(c, -20)}"/>
+    <circle cx="57" cy="42" r="1.9" fill="${shade(c, -20)}"/>
+    <circle cx="51" cy="40" r="1.6" fill="${shade(c, -20)}"/>
+    <path d="M33 54 Q50 66 67 54" stroke="${EYE}" stroke-width="3" fill="none" stroke-linecap="round"/>
+    ${cheeks(56, 25)}
+    ${shine(27, 28, 5, 3)}`,
 
-add('turtle', (c) => `
-  <circle cx="82" cy="62" r="14" fill="${shade(c, 34)}"/>
-  <circle cx="86" cy="58" r="3.6" fill="${EYE}"/>
-  <ellipse cx="24" cy="80" rx="10" ry="7" fill="${shade(c, 34)}"/>
-  <ellipse cx="58" cy="82" rx="10" ry="7" fill="${shade(c, 34)}"/>
-  <path d="M8 74 Q46 14 84 74 Z" fill="${c}"/>
-  <path d="M46 22 v52 M22 50 h48 M28 38 l10 10 M64 38 l-10 10"
-        stroke="${shade(c, -36)}" stroke-width="3" fill="none" stroke-linecap="round"/>`);
+  duck: (c) => sticker(`
+    <path d="M16 56 L3 42 L24 50 Z" fill="${c}"/>
+    <ellipse cx="44" cy="64" rx="32" ry="22" fill="${c}"/>
+    <circle cx="64" cy="32" r="18" fill="${c}"/>
+    <path d="M78 29 Q97 31 81 41 Q76 36 78 29 Z" fill="${ORANGE}"/>
+    <ellipse cx="38" cy="89" rx="8" ry="4" fill="${ORANGE}"/>
+    <ellipse cx="54" cy="89" rx="8" ry="4" fill="${ORANGE}"/>`, c) + `
+    <ellipse cx="50" cy="75" rx="20" ry="8" fill="${shade(c, 30)}"/>
+    <path d="M24 60 Q40 46 60 60 Q44 78 24 60 Z" fill="${shade(c, -18)}"/>
+    <circle cx="68" cy="28" r="4.6" fill="${EYE}"/>
+    <circle cx="69.6" cy="26.4" r="1.7" fill="#fff"/>
+    <ellipse cx="68" cy="38" rx="4" ry="2.8" fill="${BLUSH}" opacity=".6"/>
+    ${shine(56, 22, 5, 3)}`,
 
-add('bee', (c) => `
-  <ellipse cx="34" cy="30" rx="17" ry="12" fill="#ffffff" opacity=".78"
-           transform="rotate(-24 34 30)"/>
-  <ellipse cx="68" cy="30" rx="17" ry="12" fill="#ffffff" opacity=".78"
-           transform="rotate(24 68 30)"/>
-  <ellipse cx="50" cy="60" rx="30" ry="24" fill="${c}"/>
-  <path d="M40 39 v42 M56 37 v46" stroke="${shade(c, -70)}" stroke-width="8"/>
-  <circle cx="30" cy="54" r="4.4" fill="${EYE}"/>
-  <path d="M26 66 q6 5 12 1" stroke="${EYE}" stroke-width="2.4"
-        fill="none" stroke-linecap="round"/>
-  <path d="M28 34 q-4 -12 4 -16 M40 30 q0 -14 10 -16"
-        stroke="${EYE}" stroke-width="2.6" fill="none" stroke-linecap="round"/>`);
+  fish: (c) => sticker(`
+    <path d="M26 50 L4 29 Q11 50 4 71 Z" fill="${shade(c, -24)}"/>
+    <path d="M42 28 Q58 8 72 28 Z" fill="${shade(c, -24)}"/>
+    <path d="M48 72 Q56 86 66 72 Z" fill="${shade(c, -24)}"/>
+    <ellipse cx="56" cy="50" rx="34" ry="25" fill="${c}"/>`, c) + `
+    <ellipse cx="58" cy="61" rx="24" ry="9" fill="${shade(c, 30)}"/>
+    <path d="M36 42 q5 5 10 0 q5 5 10 0 M40 52 q5 5 10 0 q5 5 10 0" stroke="${shade(c, -18)}" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <path d="M58 54 q-12 2 -9 13 q9 -3 9 -13 z" fill="${shade(c, -24)}"/>
+    <circle cx="75" cy="43" r="6.2" fill="${EYE}"/>
+    <circle cx="77" cy="41" r="2.3" fill="#fff"/>
+    <path d="M82 56 q4 3.5 7 -1" stroke="${EYE}" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    <ellipse cx="72" cy="55" rx="4" ry="2.8" fill="${BLUSH}" opacity=".6"/>
+    ${shine(58, 33, 9, 3)}`,
 
-add('butterfly', (c) => `
-  <ellipse cx="28" cy="36" rx="22" ry="19" fill="${c}" transform="rotate(-18 28 36)"/>
-  <ellipse cx="72" cy="36" rx="22" ry="19" fill="${c}" transform="rotate(18 72 36)"/>
-  <ellipse cx="32" cy="68" rx="17" ry="15" fill="${shade(c, 30)}"/>
-  <ellipse cx="68" cy="68" rx="17" ry="15" fill="${shade(c, 30)}"/>
-  <circle cx="28" cy="34" r="5" fill="#fff" opacity=".65"/>
-  <circle cx="72" cy="34" r="5" fill="#fff" opacity=".65"/>
-  <ellipse cx="50" cy="52" rx="6" ry="26" fill="${shade(c, -55)}"/>
-  <path d="M46 26 q-6 -14 -12 -16 M54 26 q6 -14 12 -16"
-        stroke="${shade(c, -55)}" stroke-width="2.6" fill="none" stroke-linecap="round"/>`);
+  pig: (c) => sticker(`
+    <path d="M71 82 q11 -1 9 -8 q-2 -5 -6 -1 q-3 4 3 6 q6 1 9 -4" fill="none" stroke="${c}" stroke-width="3.5" stroke-linecap="round"/>
+    <ellipse cx="50" cy="77" rx="25" ry="18" fill="${c}"/>
+    <ellipse cx="50" cy="46" rx="27" ry="23" fill="${c}"/>
+    <path d="M33 27 Q12 14 10 40 Q22 40 33 27 Z" fill="${c}"/>
+    <path d="M67 27 Q88 14 90 40 Q78 40 67 27 Z" fill="${c}"/>
+    <ellipse cx="38" cy="92" rx="7" ry="5" fill="${shade(c, -35)}"/>
+    <ellipse cx="62" cy="92" rx="7" ry="5" fill="${shade(c, -35)}"/>`, c) + `
+    <path d="M30 28 Q17 21 15 36 Q22 35 30 28 Z" fill="${shade(c, -25)}" opacity=".55"/>
+    <path d="M70 28 Q83 21 85 36 Q78 35 70 28 Z" fill="${shade(c, -25)}" opacity=".55"/>
+    <ellipse cx="50" cy="80" rx="13" ry="10" fill="${shade(c, 25)}"/>
+    ${roundEyes(42, 12, 4.8)}
+    <ellipse cx="50" cy="55" rx="12" ry="8.5" fill="${shade(c, -15)}"/>
+    <ellipse cx="46" cy="55" rx="2.3" ry="3.4" fill="${shade(c, -60)}"/>
+    <ellipse cx="54" cy="55" rx="2.3" ry="3.4" fill="${shade(c, -60)}"/>
+    <path d="M45 66 q5 4 10 0" stroke="${EYE}" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+    ${cheeks(55, 21)}
+    ${shine(38, 31)}`,
+
+  penguin: (c) => sticker(`
+    <ellipse cx="21" cy="58" rx="8" ry="19" fill="${c}" transform="rotate(22 21 58)"/>
+    <ellipse cx="79" cy="58" rx="8" ry="19" fill="${c}" transform="rotate(-22 79 58)"/>
+    <ellipse cx="50" cy="54" rx="29" ry="38" fill="${c}"/>
+    <ellipse cx="40" cy="92" rx="9" ry="4.5" fill="${ORANGE}"/>
+    <ellipse cx="60" cy="92" rx="9" ry="4.5" fill="${ORANGE}"/>`, c) + `
+    <ellipse cx="50" cy="65" rx="20" ry="25" fill="${CREAM}"/>
+    <circle cx="41" cy="39" r="11" fill="${CREAM}"/>
+    <circle cx="59" cy="39" r="11" fill="${CREAM}"/>
+    ${roundEyes(39, 9, 4.8)}
+    <path d="M44 46 h12 l-6 7 z" fill="${ORANGE}" stroke="${ORANGE}" stroke-linejoin="round"/>
+    ${cheeks(49, 17, 3.8)}
+    ${shine(36, 25, 7, 4)}`,
+
+  turtle: (c) => {
+    const skin = shade(c, 40);
+    const hex = (cx, cy, r) => Array.from({ length: 6 }, (_, i) => {
+      const a = Math.PI / 6 + (i * Math.PI) / 3;
+      return `${(cx + r * Math.cos(a)).toFixed(1)},${(cy + r * Math.sin(a)).toFixed(1)}`;
+    }).join(' ');
+    return sticker(`
+      <path d="M12 72 L2 77 L13 79 Z" fill="${skin}"/>
+      <ellipse cx="26" cy="81" rx="8" ry="9" fill="${skin}"/>
+      <ellipse cx="62" cy="81" rx="8" ry="9" fill="${skin}"/>
+      <ellipse cx="76" cy="66" rx="10" ry="7" fill="${skin}"/>
+      <circle cx="85" cy="58" r="11" fill="${skin}"/>
+      <path d="M8 74 Q12 26 46 26 Q80 26 82 74 Z" fill="${c}"/>
+      <path d="M5 70 H85 Q85 79 79 79 H11 Q5 79 5 70 Z" fill="${shade(c, -25)}"/>`, c) + `
+      <polygon points="${hex(45, 52, 10)}" fill="${shade(c, 18)}" stroke="${shade(c, -30)}" stroke-width="2.2"/>
+      <polygon points="${hex(25, 60, 7)}" fill="${shade(c, 18)}" stroke="${shade(c, -30)}" stroke-width="2.2"/>
+      <polygon points="${hex(65, 60, 7)}" fill="${shade(c, 18)}" stroke="${shade(c, -30)}" stroke-width="2.2"/>
+      <polygon points="${hex(45, 34, 5.5)}" fill="${shade(c, 18)}" stroke="${shade(c, -30)}" stroke-width="2.2"/>
+      <circle cx="88" cy="55" r="3.8" fill="${EYE}"/>
+      <circle cx="89.3" cy="53.7" r="1.4" fill="#fff"/>
+      <path d="M85 63 q4 3 8 -1" stroke="${EYE}" stroke-width="2" fill="none" stroke-linecap="round"/>
+      ${shine(28, 40, 8, 3.5)}`;
+  },
+
+  bee: (c) => sticker(`
+    <ellipse cx="38" cy="30" rx="12" ry="17" fill="#eef8ff" transform="rotate(-20 38 30)"/>
+    <ellipse cx="56" cy="28" rx="11" ry="16" fill="#eef8ff" transform="rotate(15 56 28)"/>
+    <path d="M15 60 L3 63 L15 68 Z" fill="${EYE}"/>
+    <ellipse cx="45" cy="63" rx="31" ry="22" fill="${c}"/>
+    <circle cx="75" cy="57" r="17" fill="${c}"/>
+    <path d="M78 41 q2 -12 10 -16 M71 41 q-2 -12 4 -18" fill="none" stroke="${EYE}" stroke-width="2.6" stroke-linecap="round"/>
+    <circle cx="88" cy="25" r="3" fill="${EYE}"/>
+    <circle cx="75" cy="23" r="3" fill="${EYE}"/>`, c) + `
+    <path d="M33 43.5 V82.5 M49 41.5 V84.5" stroke="${shade(c, -70)}" stroke-width="8"/>
+    <path d="M44 34 q-6 -6 -10 -10 M56 32 q4 -6 6 -10" stroke="#cfe6f5" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+    <circle cx="79" cy="53" r="4.6" fill="${EYE}"/>
+    <circle cx="80.6" cy="51.4" r="1.7" fill="#fff"/>
+    <path d="M77 63 q5 4 10 0" stroke="${EYE}" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+    <ellipse cx="72" cy="62" rx="4" ry="2.8" fill="${BLUSH}" opacity=".6"/>
+    ${shine(40, 50, 7, 3)}`,
+
+  butterfly: (c) => sticker(`
+    <ellipse cx="28" cy="38" rx="22" ry="19" fill="${c}" transform="rotate(-18 28 38)"/>
+    <ellipse cx="72" cy="38" rx="22" ry="19" fill="${c}" transform="rotate(18 72 38)"/>
+    <ellipse cx="32" cy="70" rx="17" ry="15" fill="${shade(c, 30)}"/>
+    <ellipse cx="68" cy="70" rx="17" ry="15" fill="${shade(c, 30)}"/>
+    <path d="M46 25 q-6 -12 -12 -14 M54 25 q6 -12 12 -14" fill="none" stroke="${shade(c, -55)}" stroke-width="2.6" stroke-linecap="round"/>
+    <circle cx="34" cy="11" r="3" fill="${shade(c, -55)}"/>
+    <circle cx="66" cy="11" r="3" fill="${shade(c, -55)}"/>
+    <ellipse cx="50" cy="60" rx="6" ry="24" fill="${shade(c, -55)}"/>
+    <circle cx="50" cy="33" r="9.5" fill="${shade(c, -55)}"/>`, c) + `
+    <circle cx="26" cy="36" r="8" fill="#fff" opacity=".55"/>
+    <circle cx="74" cy="36" r="8" fill="#fff" opacity=".55"/>
+    <circle cx="15" cy="46" r="3.2" fill="#fff" opacity=".7"/>
+    <circle cx="85" cy="46" r="3.2" fill="#fff" opacity=".7"/>
+    <circle cx="32" cy="71" r="6" fill="${shade(c, -10)}"/>
+    <circle cx="68" cy="71" r="6" fill="${shade(c, -10)}"/>
+    <circle cx="50" cy="33" r="7.5" fill="${shade(c, 45)}"/>
+    ${roundEyes(32, 3.6, 2)}
+    <path d="M47.5 35.5 q2.5 2.2 5 0" stroke="${EYE}" stroke-width="1.3" fill="none" stroke-linecap="round"/>`,
+
+  bunny: (c) => sticker(`
+    <ellipse cx="38" cy="22" rx="9" ry="21" fill="${c}" transform="rotate(-8 38 22)"/>
+    <ellipse cx="62" cy="22" rx="9" ry="21" fill="${c}" transform="rotate(8 62 22)"/>
+    <circle cx="74" cy="85" r="8" fill="${CREAM}"/>
+    <ellipse cx="50" cy="77" rx="21" ry="17" fill="${c}"/>
+    <ellipse cx="50" cy="47" rx="25" ry="21" fill="${c}"/>
+    <ellipse cx="38" cy="92" rx="10" ry="5" fill="${c}"/>
+    <ellipse cx="62" cy="92" rx="10" ry="5" fill="${c}"/>`, c) + `
+    <ellipse cx="38" cy="22" rx="4.5" ry="15" fill="${BLUSH}" opacity=".8" transform="rotate(-8 38 22)"/>
+    <ellipse cx="62" cy="22" rx="4.5" ry="15" fill="${BLUSH}" opacity=".8" transform="rotate(8 62 22)"/>
+    <ellipse cx="50" cy="80" rx="12" ry="11" fill="${CREAM}"/>
+    ${roundEyes(45, 11, 5.2)}
+    <ellipse cx="50" cy="53" rx="3.6" ry="2.7" fill="${NOSE}"/>
+    <rect x="47.2" y="57" width="5.6" height="5" rx="1.4" fill="#fff" stroke="${shade(c, -45)}" stroke-width="1.1"/>
+    ${catMouth(55.5)}
+    ${cheeks(54, 17)}
+    ${shine(38, 35, 7, 4)}`,
+};
+
+for (const [name, fn] of Object.entries(ANIMAL_ART)) add(name, fn);
 
 /* ── countable objects ─────────────────────────────────────────────────── */
 
