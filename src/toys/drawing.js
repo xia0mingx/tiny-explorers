@@ -16,7 +16,7 @@ import { el, pick } from '../util.js';
 import { spriteBody, PALETTE } from '../art.js';
 import { sfx } from '../audio.js';
 
-const STAMP_SPRITES = ['star', 'apple', 'balloon', 'flower', 'cupcake', 'butterfly'];
+const STAMP_SPRITES = ['shinyStar', 'apple', 'balloon', 'flower', 'cupcake', 'butterfly'];
 const BRUSH_SIZES = [8, 16, 28];
 
 function svgToImage(svgMarkup, size) {
