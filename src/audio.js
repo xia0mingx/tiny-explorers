@@ -17,9 +17,17 @@
      unlock() is wired to the first touch and every play call resumes defensively.
    - speechSynthesis.getVoices() is empty on first call and fills in asynchronously,
      so the voice is chosen lazily on each utterance instead of cached at load.
+
+   Recorded voice: the device voice a web app gets on iPad is robotic, so
+   every sentence the app says is pre-recorded in one warm neural voice
+   (tools/make_voice.py → audio/voice/*.mp3) and played through WebAudio,
+   the same already-unlocked context the sound effects use. A sentence with
+   no clip (or a clip that fails to load) falls back to speechSynthesis, so
+   speech never just goes silent.
 */
 
 import { getSettings } from './state.js';
+import { VOICE_LINES } from './voice-lines.js';
 
 let ctx = null;
 
@@ -137,12 +145,20 @@ const PREFERRED = ['Samantha', 'Karen', 'Moira', 'Tessa', 'Google UK English Fem
    back to the known-good PREFERRED list. */
 const QUALITY_HINT = /natural|neural|online/i;
 
+/* Apple's equivalent: a voice the parent downloaded under Settings →
+   Accessibility → Spoken Content → Voices shows up as "Premium" or
+   "Enhanced" (in its name or voiceURI), and is far less robotic than the
+   compact default Samantha. Only used for sentences with no recorded clip. */
+const APPLE_QUALITY = /premium|enhanced/i;
+
 function chooseVoice() {
   const voices = speechSynthesis.getVoices?.() ?? [];
   if (!voices.length) return null;
   const english = voices.filter((v) => v.lang?.startsWith('en'));
   const pool = english.length ? english : voices;
 
+  const apple = pool.find((v) => APPLE_QUALITY.test(`${v.name} ${v.voiceURI}`));
+  if (apple) return apple;
   const natural = pool.find((v) => QUALITY_HINT.test(v.name));
   if (natural) return natural;
 
@@ -153,14 +169,53 @@ function chooseVoice() {
   return pool[0];
 }
 
+/** File-name form of a sentence. Must match slug() in tools/make_voice.py. */
+export const voiceSlug = (text) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+const RECORDED = new Set(VOICE_LINES);
+const clips = new Map();   // slug -> Promise<AudioBuffer>
+let playing = null;        // the clip source currently speaking
+let sayId = 0;             // bumps on every say()/stopSpeech(), so a clip that
+                           // finishes loading late never talks over a newer one
+
+function loadClip(slug, ac) {
+  if (!clips.has(slug)) {
+    const p = fetch(`./audio/voice/${slug}.mp3`)
+      .then((r) => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+      // Callback form: older iPadOS Safari has no promise-returning decodeAudioData.
+      .then((buf) => new Promise((res, rej) => ac.decodeAudioData(buf, res, rej)));
+    p.catch(() => clips.delete(slug)); // let a later tap retry
+    clips.set(slug, p);
+  }
+  return clips.get(slug);
+}
+
 /** Speak text aloud. Always available — the caller (the speaker button) is the
  *  only gate this needs, since a tap is itself the permission. Cancels anything
  *  still playing so rapid taps don't stack up a queue that keeps talking long
  *  after the child moved on. */
 export function say(text) {
-  if (!('speechSynthesis' in window) || !text) return;
+  if (!text) return;
+  stopSpeech();
+  const id = sayId;
+  const slug = voiceSlug(text);
+  const ac = RECORDED.has(slug) ? audioCtx() : null;
+  if (!ac) { saySynth(text); return; }
+  loadClip(slug, ac).then((buf) => {
+    if (id !== sayId) return;
+    const src = ac.createBufferSource();
+    src.buffer = buf;
+    src.connect(ac.destination);
+    src.onended = () => { if (playing === src) playing = null; };
+    src.start();
+    playing = src;
+  }).catch(() => { if (id === sayId) saySynth(text); });
+}
+
+/** The device's own voice — only for sentences with no recorded clip. */
+function saySynth(text) {
+  if (!('speechSynthesis' in window)) return;
   try {
-    speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     const v = chooseVoice();
     if (v) u.voice = v;
@@ -177,6 +232,8 @@ export function say(text) {
 }
 
 export function stopSpeech() {
+  sayId += 1;
+  if (playing) { try { playing.stop(); } catch { /* already ended */ } playing = null; }
   try { speechSynthesis.cancel(); } catch { /* ignore */ }
 }
 

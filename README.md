@@ -206,17 +206,34 @@ a real user gesture before iPadOS will let them make a sound, so the first
 touch anywhere unlocks them. Sound effects can be turned off in settings.
 
 **Speech is silent by default.** Nothing speaks on its own — the speaker
-button next to each instruction (using `speechSynthesis` with a warm voice
-where the OS has one) is the only thing that ever talks, so a session is quiet
-unless a child specifically asks for it. A grown-up can flip "Read instructions
-aloud" on in settings to have every prompt spoken automatically instead, for a
-child too young to press the speaker on their own.
+button next to each instruction is the only thing that ever talks, so a
+session is quiet unless a child specifically asks for it. A grown-up can flip
+"Read instructions aloud" on in settings to have every prompt spoken
+automatically instead, for a child too young to press the speaker on their own.
 
-`chooseVoice()` in `audio.js` prefers any installed voice labelled
-"Natural"/"Neural"/"Online" — the tier modern Windows/Edge and Android/Chrome
-ship alongside their older, more robotic SAPI/eSpeak-era voices — before
-falling back to a hardcoded list of known-good classic voices (Samantha,
-Google UK/US English, etc.). Pitch is tuned to 1.08 rather than pushed
+**Every sentence is pre-recorded.** The voice a web app gets from
+`speechSynthesis` on iPad is robotic (the natural Siri voices aren't
+available to web pages), so all ~140 sentences the app can say are recorded
+ahead of time in one warm neural voice — Kokoro's `af_heart`, a free,
+Apache-licensed model run locally, no account or API key — and shipped as
+small MP3s in `audio/voice/` (~1.3 MB, cached for offline like everything
+else). `audio.js` plays them through the same WebAudio context as the sound
+effects. **After adding or changing any spoken text, re-run:**
+
+```bash
+venv/bin/python tools/make_voice.py --model kokoro-v1.0.int8.onnx --voices voices-v1.0.bin
+```
+
+`tools/voice_lines.mjs` builds the sentence list from the games' own data
+(prompt strings, art.js's lists, the tracing and dot-to-dot labels), and the
+script header has the one-time setup. A sentence without a clip still
+speaks, via `speechSynthesis` — just in the device voice — so a missed
+re-record degrades quietly rather than going silent.
+
+For that fallback, `chooseVoice()` prefers a downloaded Apple "Premium" /
+"Enhanced" voice, then any voice labelled "Natural"/"Neural"/"Online" (the
+modern Windows/Edge and Android/Chrome tiers), then a hardcoded list of
+known-good classic voices. Pitch is tuned to 1.08 rather than pushed
 higher: most engines pitch-shift by simple resampling rather than preserving
 formants, so the further it sits from 1.0 the more "chipmunk" it sounds.
 
@@ -260,7 +277,8 @@ no Pillow). PNGs are needed because iPadOS's "Add to Home Screen" reads
 - **Adding a free-play toy**: drop a module in `src/toys/`, export `id`,
   `title`, `color`, `icon()` and `mount(ctx)` (no `rounds`/`round` — a toy
   never ends), and add it to `src/toys/index.js`.
-- **Either way**, also add the new file(s) to the `SHELL` list in
+- **Either way**, re-run `tools/make_voice.py` if the new game says anything,
+  and add the new file(s) to the `SHELL` list in
   `src/cache-manifest.js` (shared by `sw.js` and the offline-ready indicator —
   missing it there means the new game/toy silently isn't available offline,
   and the indicator won't catch it since it only counts what's *in* the list,

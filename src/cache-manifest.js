@@ -11,8 +11,10 @@
    a shipped change, not two that can drift apart. Bump both together.
 */
 
-export const CACHE_NAME = 'tiny-explorers-v32';
-export const APP_VERSION = '1.22.0';
+import { VOICE_LINES } from './voice-lines.js';
+
+export const CACHE_NAME = 'tiny-explorers-v33';
+export const APP_VERSION = '1.23.0';
 
 export const SHELL = [
   './',
@@ -29,6 +31,7 @@ export const SHELL = [
   './src/toyShell.js',
   './src/offline.js',
   './src/cache-manifest.js',
+  './src/voice-lines.js',
   './src/games/index.js',
   './src/games/counting.js',
   './src/games/shapes.js',
@@ -52,4 +55,6 @@ export const SHELL = [
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/apple-touch-icon.png',
+  // Every recorded voice clip (see tools/make_voice.py).
+  ...VOICE_LINES.map((slug) => `./audio/voice/${slug}.mp3`),
 ];
